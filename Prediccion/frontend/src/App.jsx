@@ -720,7 +720,7 @@ export default function App() {
       </main>
 
       <footer className="relative z-10 mt-16 border-t border-white/5 py-4 text-center text-xs text-slate-700">
-        ML Studio · Proyecto - Talento Tech - UniSabaneta · scikit-learn + FastAPI + React
+        Proyecto Final Inteligencia Artificial - Unisabaneta
       </footer>
     </div>
   )
