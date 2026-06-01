@@ -412,6 +412,14 @@ def train(req: TrainRequest):
     if len(df) < 20:
         raise HTTPException(400, f'Solo quedan {len(df)} filas después de limpiar nulos, se necesitan al menos 20')
 
+    # Eliminar columnas de fecha/datetime (no son numéricas ni categóricas entrenables)
+    datetime_cols = df[feat_cols].select_dtypes(include=['datetime64', 'datetimetz']).columns.tolist()
+    if datetime_cols:
+        feat_cols = [f for f in feat_cols if f not in datetime_cols]
+        df = df[feat_cols + [req.target]]
+        if not feat_cols:
+            raise HTTPException(400, 'Todas las variables predictoras son fechas. Selecciona columnas numéricas o categóricas.')
+
     # Encode categoricals
     label_encoders = {}
     for col in df.select_dtypes(include='object').columns:
