@@ -32,10 +32,24 @@ app = FastAPI(title='ML Studio Colombia', version='1.0.0')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['*'],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+
+# ── Manejador global de errores (siempre con headers CORS) ────────────────────
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={'detail': f'Error interno: {exc}'},
+        headers={'Access-Control-Allow-Origin': '*'},
+    )
 
 # ── In-memory session state ───────────────────────────────────────────────────
 current_df: Optional[pd.DataFrame] = None
@@ -195,16 +209,38 @@ DEMO_META = {
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _json_safe(val):
+    """Convierte cualquier valor de pandas/numpy a un tipo serializable en JSON."""
+    if val is None or (isinstance(val, float) and np.isnan(val)):
+        return None
+    if isinstance(val, (np.integer,)):
+        return int(val)
+    if isinstance(val, (np.floating,)):
+        return None if np.isnan(val) else float(val)
+    if isinstance(val, (np.bool_,)):
+        return bool(val)
+    if isinstance(val, (pd.Timestamp,)):
+        return val.strftime('%Y-%m-%d')
+    try:
+        if pd.isna(val):
+            return None
+    except (ValueError, TypeError):
+        pass
+    return str(val) if not isinstance(val, (int, float, bool, str)) else val
+
+
 def df_summary(df: pd.DataFrame, extra: dict = None) -> dict:
+    preview_raw = df.head(10).to_dict(orient='records')
+    preview = [{k: _json_safe(v) for k, v in row.items()} for row in preview_raw]
     result = {
-        'columnas': list(df.columns),
-        'filas': len(df),
-        'preview': df.head(10).to_dict(orient='records'),
-        'nulos': df.isnull().sum().to_dict(),
-        'tipos': {c: str(t) for c, t in df.dtypes.items()},
+        'columnas': [str(c) for c in df.columns],
+        'filas': int(len(df)),
+        'preview': preview,
+        'nulos': {str(c): int(v) for c, v in df.isnull().sum().items()},
+        'tipos': {str(c): str(t) for c, t in df.dtypes.items()},
         'problemas': [],
     }
-    null_counts = {c: int(v) for c, v in df.isnull().sum().items() if v > 0}
+    null_counts = {str(c): int(v) for c, v in df.isnull().sum().items() if v > 0}
     if null_counts:
         result['problemas'].append(f"Valores nulos en: {null_counts}")
     dups = int(df.duplicated().sum())
