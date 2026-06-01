@@ -1301,8 +1301,19 @@ export default function App() {
       {/* ── Header ── */}
       <header className="relative z-10 border-b border-white/5 bg-black/20 backdrop-blur-xl sticky top-0">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 font-black text-sm shadow-lg shadow-violet-500/30">
-            ML
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-500/30 overflow-hidden">
+            <svg viewBox="0 0 28 28" className="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {[[5,7,13,10],[5,7,13,18],[5,14,13,10],[5,14,13,18],[5,21,13,10],[5,21,13,18]].map(([x1,y1,x2,y2],i)=>(
+                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="white" strokeWidth="0.8" strokeOpacity="0.45"/>
+              ))}
+              {[[13,10,23,14],[13,18,23,14]].map(([x1,y1,x2,y2],i)=>(
+                <line key={`o${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="white" strokeWidth="0.8" strokeOpacity="0.45"/>
+              ))}
+              {[7,14,21].map(y=><circle key={y} cx="5" cy={y} r="2.2" fill="white" fillOpacity="0.8"/>)}
+              {[10,18].map(y=><circle key={y} cx="13" cy={y} r="2.5" fill="white"/>)}
+              <circle cx="23" cy="14" r="3" fill="white"/>
+              <circle cx="23" cy="14" r="1.5" fill="#3B82F6"/>
+            </svg>
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tight">
