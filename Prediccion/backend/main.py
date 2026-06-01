@@ -230,7 +230,7 @@ def _json_safe(val):
 
 
 def df_summary(df: pd.DataFrame, extra: dict = None) -> dict:
-    preview_raw = df.head(10).to_dict(orient='records')
+    preview_raw = df.tail(10).to_dict(orient='records')
     preview = [{k: _json_safe(v) for k, v in row.items()} for row in preview_raw]
     result = {
         'columnas': [str(c) for c in df.columns],

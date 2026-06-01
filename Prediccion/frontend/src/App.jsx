@@ -837,7 +837,7 @@ export default function App() {
             </Card>
 
             <Card className="p-5">
-              <h3 className="font-bold text-slate-300 mb-4 flex items-center gap-2"><span>👁</span> Vista previa</h3>
+              <h3 className="font-bold text-slate-300 mb-4 flex items-center gap-2"><span>👁</span> Vista previa — últimas 10 filas</h3>
               <DataTable columns={dataInfo.columnas} rows={dataInfo.preview} />
             </Card>
           </div>
