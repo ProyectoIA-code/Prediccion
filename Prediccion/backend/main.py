@@ -323,7 +323,7 @@ def df_summary(df: pd.DataFrame, extra: dict = None) -> dict:
 
 def fig_to_b64(fig) -> str:
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', bbox_inches='tight', dpi=150, facecolor='white')
+    fig.savefig(buf, format='png', bbox_inches='tight', dpi=90, facecolor='white')
     buf.seek(0)
     b64 = base64.b64encode(buf.read()).decode()
     plt.close(fig)
@@ -466,7 +466,7 @@ MODELS_MAP = {
     # Clasificación
     'regresion_logistica': lambda: LogisticRegression(max_iter=1000, random_state=42),
     'arbol_decision_cls': lambda: DecisionTreeClassifier(max_depth=10, random_state=42),
-    'random_forest_cls': lambda: RandomForestClassifier(n_estimators=100, random_state=42),
+    'random_forest_cls': lambda: RandomForestClassifier(n_estimators=30, max_depth=8, random_state=42),
     'svm': lambda: SVC(probability=True, random_state=42),
     'knn': lambda: KNeighborsClassifier(n_neighbors=5),
     # Regresión
@@ -474,7 +474,7 @@ MODELS_MAP = {
     'ridge': lambda: Ridge(alpha=1.0),
     'lasso': lambda: Lasso(alpha=1.0, max_iter=5000),
     'arbol_decision_reg': lambda: DecisionTreeRegressor(max_depth=10, random_state=42),
-    'random_forest_reg': lambda: RandomForestRegressor(n_estimators=100, random_state=42),
+    'random_forest_reg': lambda: RandomForestRegressor(n_estimators=30, max_depth=8, random_state=42),
     'svr': lambda: SVR(kernel='rbf'),
 }
 
