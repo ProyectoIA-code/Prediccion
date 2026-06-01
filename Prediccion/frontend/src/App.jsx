@@ -298,9 +298,9 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-lg font-black tracking-tight">
-              <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">ML</span> Studio
+              <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">IA Predict</span> · Grupo FDS 674
             </h1>
-            <p className="text-xs text-slate-600">Análisis predictivo · Datos Colombia (COP)</p>
+            <p className="text-xs text-slate-600">Proyecto Final Inteligencia Artificial · Unisabaneta</p>
           </div>
           {dataInfo && (
             <button onClick={resetAll} className="ml-auto text-xs text-slate-600 hover:text-red-400 transition underline">
