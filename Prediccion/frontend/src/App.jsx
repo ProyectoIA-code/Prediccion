@@ -1114,7 +1114,7 @@ const DEMOS = [
   {
     id: 'vivienda', icon: '🏠', title: 'Compra de Vivienda',
     desc: 'Predice el precio en millones COP según área, estrato, ciudad y características.',
-    task: 'Regresión', rows: 300,
+    task: 'Regresión', rows: 1000,
     gradient: 'from-blue-600/20 to-indigo-600/20',
     border: 'hover:border-blue-500/50',
     glow: 'hover:shadow-blue-500/10',
@@ -1336,8 +1336,9 @@ export default function App() {
               ❓ Ayuda
             </button>
             {dataInfo && (
-              <button onClick={resetAll} className="text-xs text-slate-600 hover:text-red-400 transition underline ml-1">
-                Reiniciar
+              <button onClick={resetAll}
+                className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/20 transition">
+                🔄 Reiniciar
               </button>
             )}
           </div>
