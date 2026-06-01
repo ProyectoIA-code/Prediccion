@@ -1,6 +1,6 @@
 import io
 import base64
-import joblib
+import pickle
 import warnings
 from typing import Any, Dict, List, Optional
 
@@ -338,9 +338,9 @@ def train(req: TrainRequest):
     y_pred = model.predict(X_test)
 
     # Serializar modelo al frontend (base64)
-    model_b64  = base64.b64encode(joblib.dumps(model)).decode()
-    le_b64     = base64.b64encode(joblib.dumps(label_encoders)).decode()
-    scaler_b64 = base64.b64encode(joblib.dumps(scaler)).decode() if scaler else None
+    model_b64  = base64.b64encode(pickle.dumps(model)).decode()
+    le_b64     = base64.b64encode(pickle.dumps(label_encoders)).decode()
+    scaler_b64 = base64.b64encode(pickle.dumps(scaler)).decode() if scaler else None
 
     charts: Dict[str, str] = {}
     metrics: Dict[str, float] = {}
@@ -439,9 +439,9 @@ class PredictRequest(BaseModel):
 def predict(req: PredictRequest):
     try:
         ms = req.model_state
-        model          = joblib.loads(base64.b64decode(ms['model_b64']))
-        label_encoders = joblib.loads(base64.b64decode(ms['le_b64']))
-        scaler         = joblib.loads(base64.b64decode(ms['scaler_b64'])) if ms.get('scaler_b64') else None
+        model          = pickle.loads(base64.b64decode(ms['model_b64']))
+        label_encoders = pickle.loads(base64.b64decode(ms['le_b64']))
+        scaler         = pickle.loads(base64.b64decode(ms['scaler_b64'])) if ms.get('scaler_b64') else None
         feat_cols      = ms['feature_columns']
         task_type      = ms['task_type']
 
