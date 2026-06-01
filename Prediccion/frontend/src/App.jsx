@@ -1197,6 +1197,7 @@ export default function App() {
   const [showArq, setShowArq]       = useState(false)
   const [showManual, setShowManual] = useState(false)
   const [showAyuda, setShowAyuda]   = useState(false)
+  const [loadedDemo, setLoadedDemo] = useState(null)
   const [dataInfo, setDataInfo]     = useState(null)
   const [cleanOpts, setCleanOpts]   = useState({ eliminar_duplicados: false, estrategia_nulos: 'ninguna' })
   const [target, setTarget]         = useState('')
@@ -1221,13 +1222,13 @@ export default function App() {
   }, [])
 
   const resetAll = () => {
-    setStep(1); setDataInfo(null); setTrainResults(null)
+    setStep(1); setDataInfo(null); setTrainResults(null); setLoadedDemo(null)
     setTarget(''); setAlgorithm(''); setPredResult(null); setError(''); setSuccessMsg('')
   }
 
   const loadDemo = async (id) => {
     setLoading(true); setError('')
-    try { const { data } = await axios.get(`${API}/demo/${id}`); applyDataInfo(data) }
+    try { const { data } = await axios.get(`${API}/demo/${id}`); applyDataInfo(data); setLoadedDemo(id) }
     catch (e) { handleError(e) } finally { setLoading(false) }
   }
 
@@ -1415,7 +1416,17 @@ export default function App() {
                 </h2>
                 <p className="text-sm text-slate-500 mt-0.5">{dataInfo.filas} filas · {dataInfo.columnas?.length} columnas{dataInfo.nombre_archivo ? ` · ${dataInfo.nombre_archivo}` : ''}</p>
               </div>
-              <Btn onClick={() => setStep(3)}>Continuar →</Btn>
+              <div className="flex items-center gap-2">
+                {loadedDemo && (
+                  <a
+                    href={`${API}/demo/${loadedDemo}/download`}
+                    download
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20 transition">
+                    ⬇ Descargar Excel
+                  </a>
+                )}
+                <Btn onClick={() => setStep(3)}>Continuar →</Btn>
+              </div>
             </div>
 
             {dataInfo.problemas?.length > 0 && (

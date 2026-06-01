@@ -12,6 +12,7 @@ import pandas as pd
 import seaborn as sns
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
@@ -63,44 +64,115 @@ feature_columns: List[str] = []
 # ── Demo data generators ──────────────────────────────────────────────────────
 
 def gen_vivienda() -> pd.DataFrame:
+    """
+    Dataset de vivienda Colombia 2026 — 1000 registros con precios realistas.
+    Referencia: apartamento 60 m² estrato 4 Medellín ≈ 320-400 M COP.
+    Precio/m² base 2026 (M COP): Bogotá 8.2 · Medellín 6.5 · Cartagena 6.0 · Cali 4.8 · Barranquilla 4.3
+    """
     rng = np.random.default_rng(42)
-    n = 300
-    ciudades = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena']
-    ciudad = rng.choice(ciudades, n, p=[0.35, 0.25, 0.20, 0.10, 0.10])
-    estrato = rng.choice([1, 2, 3, 4, 5, 6], n, p=[0.10, 0.20, 0.30, 0.20, 0.15, 0.05])
-    area = rng.integers(42, 280, n)
-    habitaciones = np.clip(area // 45 + rng.integers(-1, 2, n), 1, 6)
-    banos = np.clip(habitaciones - 1 + rng.integers(0, 2, n), 1, 5)
-    antiguedad = rng.integers(0, 36, n)
-    garaje = np.where(estrato >= 3, 1, rng.integers(0, 2, n)).astype(int)
-    ascensor = np.where(estrato >= 4, 1, rng.integers(0, 2, n)).astype(int)
+    n = 1000
 
-    base = np.array([
-        5.2 if c == 'Bogotá' else
-        4.5 if c == 'Medellín' else
-        4.0 if c == 'Cartagena' else
-        3.4 if c == 'Cali' else 3.0
+    ciudades = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena']
+    ciudad = rng.choice(ciudades, n, p=[0.35, 0.28, 0.18, 0.11, 0.08])
+
+    estrato = rng.choice([1, 2, 3, 4, 5, 6], n, p=[0.08, 0.17, 0.30, 0.25, 0.14, 0.06])
+
+    tipo_inmueble = np.where(
+        estrato <= 3,
+        rng.choice(['Apartamento', 'Casa'], n, p=[0.52, 0.48]),
+        rng.choice(['Apartamento', 'Casa'], n, p=[0.78, 0.22]),
+    )
+
+    area = np.where(
+        tipo_inmueble == 'Casa',
+        rng.integers(70, 380, n),
+        rng.integers(38, 210, n),
+    )
+
+    habitaciones = np.clip(area // 32 + rng.integers(-1, 2, n), 1, 7)
+    banos        = np.clip(habitaciones - 1 + rng.integers(0, 2, n), 1, 6)
+    antiguedad   = rng.integers(0, 31, n)
+
+    parqueaderos  = np.where(
+        estrato >= 3,
+        rng.choice([0, 1, 2], n, p=[0.08, 0.62, 0.30]),
+        rng.choice([0, 1],    n, p=[0.55, 0.45]),
+    )
+    deposito         = rng.choice([0, 1], n, p=[0.32, 0.68])
+    conjunto_cerrado = np.where(
+        estrato >= 3,
+        rng.choice([0, 1], n, p=[0.12, 0.88]),
+        rng.choice([0, 1], n, p=[0.42, 0.58]),
+    )
+    piso = np.where(
+        tipo_inmueble == 'Apartamento',
+        rng.integers(1, 22, n),
+        np.ones(n, dtype=int),
+    )
+
+    zonas_ciudad = {
+        'Bogotá':       ['Chapinero', 'Usaquén', 'Suba', 'Kennedy', 'Bosa'],
+        'Medellín':     ['El Poblado', 'Laureles', 'Belén', 'Robledo', 'Itagüí'],
+        'Cali':         ['Ciudad Jardín', 'El Ingenio', 'San Antonio', 'Aguablanca', 'Chipichape'],
+        'Barranquilla': ['El Prado', 'Riomar', 'Villa Santos', 'Soledad', 'Suroriente'],
+        'Cartagena':    ['Bocagrande', 'Manga', 'Pie de la Popa', 'La Boquilla', 'Turbaco'],
+    }
+    zona_factor_map = {
+        'Bogotá':       [1.20, 1.15, 0.95, 0.82, 0.78],
+        'Medellín':     [1.30, 1.12, 0.90, 0.80, 0.85],
+        'Cali':         [1.18, 1.05, 0.88, 0.72, 1.02],
+        'Barranquilla': [1.22, 1.15, 0.98, 0.80, 0.75],
+        'Cartagena':    [1.35, 1.10, 1.05, 1.20, 0.80],
+    }
+
+    zona     = np.empty(n, dtype=object)
+    zona_fac = np.ones(n)
+    for c in ciudades:
+        mask = ciudad == c
+        idx  = rng.integers(0, 5, mask.sum())
+        zona[mask]     = np.array(zonas_ciudad[c])[idx]
+        zona_fac[mask] = np.array(zona_factor_map[c])[idx]
+
+    # Precio/m² base por ciudad (M COP, 2026)
+    pm2 = np.array([
+        8.2 if c == 'Bogotá' else
+        6.5 if c == 'Medellín' else
+        4.8 if c == 'Cali' else
+        4.3 if c == 'Barranquilla' else
+        6.0   # Cartagena
         for c in ciudad
     ])
-    precio = (
-        base * estrato * area * 0.011
-        + habitaciones * 12
-        + garaje * 48
-        + ascensor * 28
-        - antiguedad * 1.6
-        + rng.normal(0, 22, n)
+
+    estrato_fac  = np.array([0.46, 0.64, 0.82, 1.00, 1.30, 1.68])[estrato - 1]
+    tipo_fac     = np.where(tipo_inmueble == 'Casa', 0.82, 1.00)
+    piso_fac     = np.where(
+        tipo_inmueble == 'Apartamento',
+        1.0 + np.clip((piso - 5) * 0.009, -0.04, 0.14),
+        1.0,
     )
-    precio = np.round(np.maximum(50, precio), 1)
+    amenidad_bon = parqueaderos * 0.038 + deposito * 0.013 + conjunto_cerrado * 0.027
+    antig_fac    = np.maximum(0.70, 1.0 - antiguedad * 0.009)
+
+    precio = (
+        pm2 * area * estrato_fac * tipo_fac * piso_fac * zona_fac
+        * (1 + amenidad_bon) * antig_fac
+        + rng.normal(0, 1, n) * pm2 * area * 0.05
+    )
+    precio = np.round(np.maximum(90, precio), 1)
 
     return pd.DataFrame({
-        'area_m2': area,
-        'habitaciones': habitaciones,
-        'banos': banos,
-        'estrato': estrato,
-        'ciudad': ciudad,
-        'antiguedad_anos': antiguedad,
-        'garaje': garaje,
-        'ascensor': ascensor,
+        'tipo_inmueble':    tipo_inmueble,
+        'ciudad':           ciudad,
+        'zona':             zona,
+        'estrato':          estrato,
+        'area_m2':          area,
+        'habitaciones':     habitaciones,
+        'banos':            banos,
+        'piso':             piso,
+        'parqueaderos':     parqueaderos,
+        'deposito':         deposito,
+        'conjunto_cerrado': conjunto_cerrado,
+        'antiguedad_anos':  antiguedad,
         'precio_millones_cop': precio,
     })
 
@@ -280,6 +352,27 @@ def load_demo(nombre: str):
     current_df = DEMO_GENERATORS[nombre]()
     label_encoders, scaler, trained_model, model_config, feature_columns = {}, None, None, {}, []
     return df_summary(current_df, DEMO_META[nombre])
+
+
+@app.get('/demo/{nombre}/download')
+def download_demo(nombre: str):
+    if nombre not in DEMO_GENERATORS:
+        raise HTTPException(404, f"Demo '{nombre}' no encontrado")
+    df = DEMO_GENERATORS[nombre]()
+    meta = DEMO_META[nombre]
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name=meta['nombre'][:31])
+    buf.seek(0)
+    filename = f"IA_Predict_Demo_{nombre}_2026.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"',
+            'Access-Control-Allow-Origin': '*',
+        },
+    )
 
 
 @app.post('/upload')
