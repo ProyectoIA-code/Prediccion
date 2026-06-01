@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import axios from 'axios'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API = 'https://ml-studio-backend-it5p.onrender.com'
 
 // ── Spinner ───────────────────────────────────────────────────────────────────
 function Spinner() {
