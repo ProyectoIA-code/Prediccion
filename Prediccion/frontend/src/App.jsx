@@ -1322,10 +1322,6 @@ export default function App() {
             <p className="text-xs text-slate-600">Proyecto Final Inteligencia Artificial · Unisabaneta</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => setShowAyuda(true)}
-              className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition">
-              ❓ Ayuda
-            </button>
             <button onClick={() => setShowArq(true)}
               className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition">
               🏗 Arquitectura
@@ -1333,6 +1329,10 @@ export default function App() {
             <button onClick={() => setShowManual(true)}
               className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 hover:bg-violet-500/20 transition">
               📖 Manual
+            </button>
+            <button onClick={() => setShowAyuda(true)}
+              className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition">
+              ❓ Ayuda
             </button>
             {dataInfo && (
               <button onClick={resetAll} className="text-xs text-slate-600 hover:text-red-400 transition underline ml-1">
