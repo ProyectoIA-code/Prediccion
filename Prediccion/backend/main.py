@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
@@ -40,8 +40,6 @@ app.add_middleware(
 
 
 # ── Manejador global de errores (siempre con headers CORS) ────────────────────
-from fastapi.responses import JSONResponse
-from fastapi import Request
 
 
 @app.exception_handler(Exception)
