@@ -138,6 +138,646 @@ function ViewArquitectura({ onClose }) {
   )
 }
 
+// ── Ayuda ─────────────────────────────────────────────────────────────────────
+function ViewAyuda({ onClose }) {
+  const [activeTopic, setActiveTopic] = useState('tipos_tarea')
+
+  const nav = [
+    {
+      grupo: 'Conceptos base', icon: '🎯',
+      items: [{ id: 'tipos_tarea', label: 'Tipos de tarea' }],
+    },
+    {
+      grupo: 'Algoritmos — Clasificación', icon: '🏷',
+      items: [
+        { id: 'cls_logistica',  label: 'Regresión Logística' },
+        { id: 'cls_arbol',      label: 'Árbol de Decisión' },
+        { id: 'cls_rf',         label: 'Random Forest' },
+        { id: 'cls_svm',        label: 'SVM' },
+        { id: 'cls_knn',        label: 'KNN' },
+      ],
+    },
+    {
+      grupo: 'Algoritmos — Regresión', icon: '📈',
+      items: [
+        { id: 'reg_lineal',  label: 'Regresión Lineal' },
+        { id: 'reg_ridge',   label: 'Ridge (L2)' },
+        { id: 'reg_lasso',   label: 'Lasso (L1)' },
+        { id: 'reg_arbol',   label: 'Árbol de Decisión' },
+        { id: 'reg_rf',      label: 'Random Forest' },
+        { id: 'reg_svr',     label: 'SVR' },
+      ],
+    },
+    {
+      grupo: 'Métricas de evaluación', icon: '📏',
+      items: [
+        { id: 'met_cls', label: 'Métricas de clasificación' },
+        { id: 'met_reg', label: 'Métricas de regresión' },
+      ],
+    },
+  ]
+
+  // ── sub-components ────────────────────────────────────────────────────────
+  function AlgCard({ emoji, name, color, badge, desc, cuando, pros, contras, visual }) {
+    const colors = {
+      violet: { border: 'border-violet-500/30', bg: 'bg-violet-500/10', text: 'text-violet-300', badge: 'bg-violet-500/20 border-violet-500/30 text-violet-300' },
+      emerald:{ border: 'border-emerald-500/30', bg: 'bg-emerald-500/10', text: 'text-emerald-300', badge: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' },
+      blue:   { border: 'border-blue-500/30', bg: 'bg-blue-500/10', text: 'text-blue-300', badge: 'bg-blue-500/20 border-blue-500/30 text-blue-300' },
+      amber:  { border: 'border-amber-500/30', bg: 'bg-amber-500/10', text: 'text-amber-300', badge: 'bg-amber-500/20 border-amber-500/30 text-amber-300' },
+      rose:   { border: 'border-rose-500/30', bg: 'bg-rose-500/10', text: 'text-rose-300', badge: 'bg-rose-500/20 border-rose-500/30 text-rose-300' },
+    }
+    const c = colors[color]
+    return (
+      <div className="space-y-4">
+        <div className={`rounded-2xl border ${c.border} ${c.bg} p-5 flex items-center gap-4`}>
+          <span className="text-4xl">{emoji}</span>
+          <div>
+            <p className={`text-xl font-black ${c.text}`}>{name}</p>
+            <span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-xs font-bold ${c.badge}`}>{badge}</span>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p className="text-sm text-slate-300 leading-relaxed">{desc}</p>
+        </div>
+        {visual && (
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-3">Representación visual</p>
+            {visual}
+          </div>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">🕐 Cuándo usarlo</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{cuando}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-2">✅ Ventajas</p>
+            <ul className="space-y-1">{pros.map((p,i) => <li key={i} className="text-xs text-slate-300 flex gap-2"><span className="text-emerald-500 shrink-0">▸</span>{p}</li>)}</ul>
+            <p className="text-xs font-bold text-rose-500 uppercase tracking-widest mt-3 mb-2">⚠ Limitaciones</p>
+            <ul className="space-y-1">{contras.map((c,i) => <li key={i} className="text-xs text-slate-400 flex gap-2"><span className="text-rose-500 shrink-0">▸</span>{c}</li>)}</ul>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  function MetricBar({ label, value, max = 1, color = 'violet', desc, formula, bueno }) {
+    const pct = Math.min((value / max) * 100, 100)
+    const colors = { violet: 'from-violet-500 to-indigo-500', emerald: 'from-emerald-500 to-teal-500', blue: 'from-blue-500 to-cyan-500', amber: 'from-amber-500 to-orange-500' }
+    return (
+      <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="font-black text-white text-sm">{label}</p>
+          <span className="text-xs font-mono text-slate-500">{formula}</span>
+        </div>
+        <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
+        <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+          <div className={`h-2 rounded-full bg-gradient-to-r ${colors[color]} transition-all`} style={{ width: `${pct}%` }} />
+        </div>
+        <p className="text-[11px] text-emerald-400">💡 {bueno}</p>
+      </div>
+    )
+  }
+
+  // ── topics content ────────────────────────────────────────────────────────
+  const topics = {
+    tipos_tarea: (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-black text-white mb-1">Tipos de tarea</h2>
+          <p className="text-sm text-slate-500">¿Qué quieres que tu modelo aprenda a predecir?</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Clasificación */}
+          <div className="rounded-2xl border border-violet-500/30 bg-violet-500/10 p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🏷</span>
+              <div>
+                <p className="font-black text-violet-300 text-lg">Clasificación</p>
+                <p className="text-xs text-slate-400">Predice a qué categoría pertenece algo</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">La salida es una categoría</p>
+              <div className="flex flex-wrap gap-2">
+                {['✅ Aprobado', '❌ Rechazado', '📈 Sube', '📉 Baja', '🟢 Positivo', '🔴 Negativo'].map(e => (
+                  <span key={e} className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-1 text-xs text-violet-300">{e}</span>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Ejemplos reales</p>
+              {['¿Se aprueba este crédito? → Sí / No', '¿El cliente se va? → Churn / No churn', '¿La acción sube mañana? → Sube / Baja'].map((e,i) => (
+                <p key={i} className="text-xs text-slate-300 flex gap-2"><span className="text-violet-400 shrink-0">▸</span>{e}</p>
+              ))}
+            </div>
+            <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 px-3 py-2">
+              <p className="text-xs font-bold text-violet-400">Métricas clave: Accuracy · F1-Score · ROC-AUC</p>
+            </div>
+          </div>
+          {/* Regresión */}
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">📈</span>
+              <div>
+                <p className="font-black text-emerald-300 text-lg">Regresión</p>
+                <p className="text-xs text-slate-400">Predice un número continuo</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">La salida es un número</p>
+              <div className="flex items-end gap-1 h-16">
+                {[40, 65, 50, 80, 70, 90, 75].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t-sm bg-gradient-to-t from-emerald-600 to-emerald-400 opacity-80" style={{ height: `${h}%` }} />
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-600 mt-1 text-center">valores numéricos continuos</p>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Ejemplos reales</p>
+              {['¿Cuánto vale esta casa? → $320.000.000', '¿Cuánto ganará la empresa? → $1.2M', '¿Cuál será el precio de la acción? → $13.05'].map((e,i) => (
+                <p key={i} className="text-xs text-slate-300 flex gap-2"><span className="text-emerald-400 shrink-0">▸</span>{e}</p>
+              ))}
+            </div>
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+              <p className="text-xs font-bold text-emerald-400">Métricas clave: R² · MAE · RMSE</p>
+            </div>
+          </div>
+        </div>
+        {/* ¿Cómo elegir? */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p className="font-bold text-slate-300 mb-4">🤔 ¿Cómo saber cuál usar?</p>
+          <div className="space-y-2">
+            {[
+              { q: 'Mi variable objetivo tiene valores como 0, 1, Sí, No, Categorías…', r: '→ Clasificación', color: 'text-violet-400' },
+              { q: 'Mi variable objetivo tiene valores como precios, temperaturas, cantidades…', r: '→ Regresión', color: 'text-emerald-400' },
+              { q: 'El tipo de dato en la columna es int64 con solo 2 valores distintos…', r: '→ Probablemente Clasificación', color: 'text-violet-400' },
+              { q: 'El tipo de dato en la columna es float64 con muchos valores distintos…', r: '→ Probablemente Regresión', color: 'text-emerald-400' },
+            ].map((row, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3">
+                <span className="text-slate-500 text-xs mt-0.5 shrink-0">Si:</span>
+                <p className="text-xs text-slate-400 flex-1">{row.q}</p>
+                <p className={`text-xs font-bold shrink-0 ${row.color}`}>{row.r}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+
+    cls_logistica: (
+      <AlgCard
+        emoji="📉" name="Regresión Logística" color="violet"
+        badge="Clasificación · Línea base recomendada"
+        desc="A pesar del nombre, NO es un algoritmo de regresión: es de clasificación. Toma las variables de entrada, las combina linealmente y aplica una función sigmoide que transforma el resultado en una probabilidad entre 0 y 1. Si la probabilidad supera 0.5, predice la clase positiva."
+        cuando="Dataset pequeño o mediano, variables numéricas, cuando necesitas interpretar exactamente por qué el modelo tomó cada decisión, o cuando quieres un punto de partida rápido para comparar con modelos más complejos."
+        pros={['Muy rápido de entrenar', 'Fácil de interpretar (coeficientes)', 'Produce probabilidades confiables', 'Funciona bien con datos linealmente separables']}
+        contras={['Asume relación lineal entre features y objetivo', 'No captura patrones complejos', 'Sensible a variables en escalas muy diferentes (requiere escalado)']}
+        visual={
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-xs text-slate-500 mb-1">Función sigmoide: transforma cualquier número → probabilidad [0, 1]</p>
+            <div className="flex items-end gap-0.5 w-full h-16">
+              {[-6,-4,-2,-1,0,1,2,4,6].map((x, i) => {
+                const sig = 1 / (1 + Math.exp(-x))
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center">
+                    <div className="w-full rounded-t-sm bg-gradient-to-t from-violet-600 to-violet-400" style={{ height: `${sig * 100}%` }} />
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex justify-between w-full text-[10px] text-slate-600">
+              <span>entrada negativa → P≈0</span><span>entrada=0 → P=0.5</span><span>entrada positiva → P≈1</span>
+            </div>
+          </div>
+        }
+      />
+    ),
+
+    cls_arbol: (
+      <AlgCard
+        emoji="🌳" name="Árbol de Decisión" color="emerald"
+        badge="Clasificación · Muy interpretable"
+        desc="Aprende una serie de preguntas tipo SI/NO sobre las variables y las organiza en forma de árbol. Cada nodo interior hace una pregunta sobre una variable, cada rama es una respuesta, y cada hoja es la predicción final. Es como un diagrama de flujo que el modelo construye automáticamente a partir de los datos."
+        cuando="Cuando necesitas explicar claramente por qué el modelo tomó una decisión, con datos que tienen relaciones no lineales, o cuando el público no es técnico y debe entender el razonamiento."
+        pros={['Totalmente interpretable', 'No requiere escalado de variables', 'Maneja variables numéricas y categóricas', 'Visualizable como diagrama']}
+        contras={['Propenso a sobreajuste (overfitting) si el árbol crece mucho', 'Inestable: pequeños cambios en datos cambian el árbol', 'No tan preciso como modelos de conjunto']}
+        visual={
+          <div className="text-center space-y-2">
+            <div className="flex justify-center">
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs text-emerald-300 font-bold">¿Ingreso &gt; $3M?</div>
+            </div>
+            <div className="flex justify-center gap-16">
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-px h-4 bg-white/20" />
+                <span className="text-[10px] text-slate-500">Sí</span>
+                <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300">¿Historial &gt; 700?</div>
+                <div className="flex gap-4 mt-1">
+                  <div className="flex flex-col items-center gap-1"><div className="w-px h-3 bg-white/20"/><div className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-[10px] text-emerald-400">✅ Aprobado</div></div>
+                  <div className="flex flex-col items-center gap-1"><div className="w-px h-3 bg-white/20"/><div className="rounded-full bg-rose-500/20 border border-rose-500/30 px-2 py-0.5 text-[10px] text-rose-400">❌ Rechazado</div></div>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-px h-4 bg-white/20" />
+                <span className="text-[10px] text-slate-500">No</span>
+                <div className="rounded-full bg-rose-500/20 border border-rose-500/30 px-3 py-1.5 text-[10px] text-rose-400 mt-3">❌ Rechazado</div>
+              </div>
+            </div>
+          </div>
+        }
+      />
+    ),
+
+    cls_rf: (
+      <AlgCard
+        emoji="🌲" name="Random Forest" color="emerald"
+        badge="Clasificación · Alta precisión"
+        desc="Crea muchos árboles de decisión distintos (el 'bosque'), cada uno entrenado con una muestra aleatoria del dataset y usando un subconjunto aleatorio de variables. La predicción final es la categoría que más árboles eligieron (votación mayoritaria). La aleatoriedad reduce el sobreajuste que tienen los árboles individuales."
+        cuando="Cuando quieres alta precisión sin mucha configuración. Es el algoritmo recomendado para empezar en la mayoría de los problemas de clasificación con datos tabulares."
+        pros={['Alta precisión en la mayoría de casos', 'Robusto ante datos atípicos (outliers)', 'Proporciona importancia de variables', 'Resiste bien el overfitting']}
+        contras={['Más lento que un solo árbol', 'Difícil de interpretar (caja negra)', 'Consume más memoria']}
+        visual={
+          <div className="space-y-2">
+            <div className="flex gap-2 justify-center">
+              {['🌳', '🌲', '🌳', '🌲', '🌳'].map((t, i) => (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <span className="text-xl">{t}</span>
+                  <div className={`rounded-full px-2 py-0.5 text-[10px] border ${i % 2 === 0 ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/20 border-rose-500/30 text-rose-400'}`}>
+                    {i % 2 === 0 ? '✅' : '❌'}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center">
+              <div className="text-slate-500 text-xs">↓ votación mayoritaria (3 vs 2)</div>
+            </div>
+            <div className="flex justify-center">
+              <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-300">✅ Predicción: Aprobado</div>
+            </div>
+          </div>
+        }
+      />
+    ),
+
+    cls_svm: (
+      <AlgCard
+        emoji="✂️" name="SVM — Support Vector Machine" color="blue"
+        badge="Clasificación · Efectivo en alta dimensión"
+        desc="Busca el hiperplano (línea en 2D, plano en 3D, …) que mejor separa las dos clases dejando el mayor margen posible entre ellas. Los puntos más cercanos al hiperplano se llaman 'vectores de soporte'. Puede usar un 'kernel' para proyectar los datos a dimensiones más altas y separar clases que no son linealmente separables."
+        cuando="Datasets con muchas variables (alta dimensionalidad), cuando las clases son difíciles de separar, o cuando el dataset no es demasiado grande (>10k filas empieza a ser lento)."
+        pros={['Funciona bien con muchas variables', 'Kernel RBF captura relaciones no lineales', 'Margen máximo reduce overfitting', 'Produce probabilidades con probability=True']}
+        contras={['Lento en datasets grandes', 'Sensible a la escala (requiere StandardScaler)', 'Difícil de interpretar', 'Requiere ajuste de hiperparámetros (C, gamma)']}
+        visual={
+          <div className="space-y-2">
+            <div className="relative h-24 rounded-lg bg-black/30 border border-white/10 overflow-hidden">
+              {[{x:15,y:25,c:'violet'},{x:25,y:40,c:'violet'},{x:20,y:60,c:'violet'},{x:35,y:30,c:'violet'},{x:65,y:35,c:'blue'},{x:75,y:55,c:'blue'},{x:80,y:25,c:'blue'},{x:70,y:70,c:'blue'}].map((p,i)=>(
+                <div key={i} className={`absolute w-3 h-3 rounded-full border-2 ${p.c==='violet'?'bg-violet-500/40 border-violet-400':'bg-blue-500/40 border-blue-400'}`} style={{left:`${p.x}%`,top:`${p.y}%`,transform:'translate(-50%,-50%)'}}/>
+              ))}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-px h-full bg-white/30 rotate-12 origin-center absolute" style={{left:'51%'}}/>
+                <div className="w-px h-full bg-white/10 rotate-12 origin-center absolute" style={{left:'43%'}}/>
+                <div className="w-px h-full bg-white/10 rotate-12 origin-center absolute" style={{left:'59%'}}/>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-600 text-center">línea sólida = hiperplano · líneas punteadas = margen máximo</p>
+          </div>
+        }
+      />
+    ),
+
+    cls_knn: (
+      <AlgCard
+        emoji="🔍" name="KNN — K Vecinos más Cercanos" color="amber"
+        badge="Clasificación · Basado en similitud"
+        desc="No 'aprende' un modelo en el sentido tradicional: guarda todos los datos de entrenamiento. Cuando llega un nuevo punto, busca los K ejemplos más parecidos (vecinos más cercanos) y predice la categoría que más aparece entre ellos. K es el número de vecinos a considerar (por defecto 5)."
+        cuando="Cuando tienes pocos datos, cuando las relaciones entre variables son locales (similitud geográfica, por ejemplo), o para prototipado rápido."
+        pros={['Concepto muy intuitivo', 'No requiere entrenamiento (lazy learning)', 'Se adapta automáticamente a nuevas clases', 'Funciona bien con k bien elegido']}
+        contras={['Lento en predicción (busca en todo el dataset)', 'Sensible a la escala (requiere StandardScaler)', 'Sufre con muchas dimensiones (curse of dimensionality)', 'Sensible a datos ruidosos']}
+        visual={
+          <div className="space-y-2">
+            <div className="relative h-28 rounded-lg bg-black/30 border border-white/10">
+              {[{x:20,y:30,c:'violet'},{x:30,y:50,c:'violet'},{x:15,y:65,c:'violet'},{x:70,y:25,c:'blue'},{x:80,y:60,c:'blue'},{x:65,y:70,c:'blue'}].map((p,i)=>(
+                <div key={i} className={`absolute w-3 h-3 rounded-full ${p.c==='violet'?'bg-violet-500':'bg-blue-500'}`} style={{left:`${p.x}%`,top:`${p.y}%`,transform:'translate(-50%,-50%)'}}/>
+              ))}
+              <div className="absolute w-4 h-4 rounded-full bg-amber-400 border-2 border-amber-300 animate-pulse" style={{left:'45%',top:'45%',transform:'translate(-50%,-50%)'}}/>
+              <div className="absolute rounded-full border border-dashed border-amber-400/50" style={{left:'45%',top:'45%',width:'80px',height:'80px',transform:'translate(-50%,-50%)'}}/>
+            </div>
+            <p className="text-[10px] text-slate-600 text-center">punto amarillo = nuevo dato · círculo = radio de búsqueda de K vecinos</p>
+          </div>
+        }
+      />
+    ),
+
+    reg_lineal: (
+      <AlgCard
+        emoji="📏" name="Regresión Lineal" color="emerald"
+        badge="Regresión · La más simple"
+        desc="Encuentra la línea recta (o hiperplano en múltiples dimensiones) que mejor se ajusta a los datos minimizando la suma de errores al cuadrado. La predicción es una combinación lineal de las variables: y = a₁x₁ + a₂x₂ + ... + b. Los coeficientes 'a' indican cuánto impacta cada variable."
+        cuando="Cuando la relación entre las variables y el objetivo es aproximadamente lineal, el dataset es pequeño o mediano, y necesitas máxima interpretabilidad de los coeficientes."
+        pros={['Más rápido de entrenar', 'Coeficientes directamente interpretables', 'Sirve como línea base para comparar', 'Bajo costo computacional']}
+        contras={['Asume relación estrictamente lineal', 'Sensible a outliers extremos', 'No captura interacciones complejas entre variables']}
+        visual={
+          <div className="space-y-2">
+            <div className="relative h-24 rounded-lg bg-black/30 border border-white/10 overflow-hidden">
+              {[{x:10,y:75},{x:20,y:65},{x:30,y:55},{x:40,y:42},{x:50,y:40},{x:60,y:28},{x:70,y:22},{x:80,y:12}].map((p,i)=>(
+                <div key={i} className="absolute w-2.5 h-2.5 rounded-full bg-emerald-400" style={{left:`${p.x}%`,top:`${p.y}%`,transform:'translate(-50%,-50%)'}}/>
+              ))}
+              <div className="absolute inset-0" style={{background:'linear-gradient(to right bottom, transparent 40%, rgba(16,185,129,0.3) 40%, rgba(16,185,129,0.3) 41%, transparent 41%)' }}/>
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="5" y1="82" x2="90" y2="5" stroke="rgb(52,211,153)" strokeWidth="1.5" strokeDasharray="none"/>
+              </svg>
+            </div>
+            <p className="text-[10px] text-slate-600 text-center">la línea minimiza la suma de errores al cuadrado</p>
+          </div>
+        }
+      />
+    ),
+
+    reg_ridge: (
+      <AlgCard
+        emoji="🛡" name="Ridge — Regularización L2" color="blue"
+        badge="Regresión · Previene sobreajuste"
+        desc="Es Regresión Lineal con un 'castigo' adicional por tener coeficientes grandes. Al minimizar los errores, también minimiza la suma de cuadrados de los coeficientes (L2). Esto reduce el impacto de variables poco relevantes sin eliminarlas completamente, mejorando la generalización del modelo."
+        cuando="Cuando tienes muchas variables y sospechas que algunas son irrelevantes o hay multicolinealidad (variables muy correlacionadas entre sí). Mejora la Regresión Lineal simple en casi todos los casos."
+        pros={['Más estable que Regresión Lineal con muchas variables', 'Reduce overfitting efectivamente', 'Funciona bien con multicolinealidad', 'Rápido de entrenar']}
+        contras={['No elimina variables irrelevantes (solo las reduce)', 'Añade un hiperparámetro alpha a ajustar', 'Coeficientes menos interpretables que Regresión Lineal']}
+        visual={
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                <p className="text-[10px] font-bold text-slate-500 mb-2">Sin Ridge (overfitting)</p>
+                <div className="flex gap-1 items-end h-10">
+                  {[90,10,85,5,75,15,60].map((h,i)=>(
+                    <div key={i} className="flex-1 rounded-t-sm bg-rose-500/40" style={{height:`${h}%`}}/>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-600 mt-1">coeficientes muy variables</p>
+              </div>
+              <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3">
+                <p className="text-[10px] font-bold text-blue-400 mb-2">Con Ridge (estable)</p>
+                <div className="flex gap-1 items-end h-10">
+                  {[60,45,55,40,50,42,48].map((h,i)=>(
+                    <div key={i} className="flex-1 rounded-t-sm bg-blue-500/60" style={{height:`${h}%`}}/>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-600 mt-1">coeficientes más suavizados</p>
+              </div>
+            </div>
+          </div>
+        }
+      />
+    ),
+
+    reg_lasso: (
+      <AlgCard
+        emoji="✂️" name="Lasso — Regularización L1" color="violet"
+        badge="Regresión · Selección automática de variables"
+        desc="Similar a Ridge pero usa la suma de valores absolutos de los coeficientes como castigo (L1). La diferencia clave: Lasso puede llevar coeficientes exactamente a cero, eliminando completamente las variables irrelevantes. Funciona como selector automático de features."
+        cuando="Cuando tienes muchas variables y crees que solo unas pocas son realmente importantes. Lasso hace la selección de features automáticamente eliminando las demás."
+        pros={['Selección automática de variables (coeficientes = 0)', 'Modelo más simple y fácil de explicar', 'Robusto ante variables irrelevantes', 'Muy útil con datasets de alta dimensionalidad']}
+        contras={['Si variables están muy correlacionadas, elige una arbitrariamente', 'Puede eliminar variables que sí son relevantes', 'Más inestable que Ridge']}
+        visual={
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] font-bold text-slate-500 mb-2">Ridge: reduce pero no elimina</p>
+              <div className="space-y-1">
+                {['var_1','var_2','var_3','var_4'].map((v,i)=>{
+                  const w = [70,50,30,15][i]
+                  return <div key={v} className="flex items-center gap-2"><span className="text-[10px] text-slate-500 w-10">{v}</span><div className="flex-1 h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-blue-500" style={{width:`${w}%`}}/></div></div>
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-violet-400 mb-2">Lasso: elimina irrelevantes</p>
+              <div className="space-y-1">
+                {['var_1','var_2','var_3','var_4'].map((v,i)=>{
+                  const w = [85,60,0,0][i]
+                  return <div key={v} className="flex items-center gap-2"><span className="text-[10px] text-slate-500 w-10">{v}</span><div className="flex-1 h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-violet-500" style={{width:`${w}%`}}/></div>{w===0&&<span className="text-[10px] text-rose-400">✕</span>}</div>
+                })}
+              </div>
+            </div>
+          </div>
+        }
+      />
+    ),
+
+    reg_arbol: (
+      <AlgCard
+        emoji="🌳" name="Árbol de Decisión (Regresión)" color="amber"
+        badge="Regresión · No lineal e interpretable"
+        desc="Igual que en clasificación, divide el espacio de datos en regiones mediante preguntas SI/NO, pero en vez de predecir una categoría, predice el promedio de los valores de entrenamiento que caen en cada región. Captura relaciones no lineales que la Regresión Lineal no puede."
+        cuando="Cuando la relación entre variables y objetivo no es lineal, necesitas interpretabilidad pero con relaciones complejas, o como componente base de Random Forest."
+        pros={['Captura relaciones no lineales', 'No requiere escalado de variables', 'Interpretable visualmente', 'Maneja variables categóricas directamente']}
+        contras={['Propenso a overfitting', 'No extrapola bien fuera del rango de entrenamiento', 'Predicciones en escalera (no suavizadas)']}
+        visual={
+          <div className="space-y-2">
+            <div className="relative h-20 rounded-lg bg-black/30 border border-white/10 overflow-hidden">
+              {[{x:5,y:70},{x:15,y:68},{x:25,y:40},{x:35,y:38},{x:45,y:42},{x:55,y:20},{x:65,y:18},{x:75,y:22},{x:85,y:50},{x:95,y:52}].map((p,i)=>(
+                <div key={i} className="absolute w-2 h-2 rounded-full bg-amber-400" style={{left:`${p.x}%`,top:`${p.y}%`,transform:'translate(-50%,-50%)'}}/>
+              ))}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <polyline points="0,70 30,70 30,40 55,40 55,20 80,20 80,52 100,52" fill="none" stroke="rgb(251,191,36)" strokeWidth="1.5"/>
+              </svg>
+            </div>
+            <p className="text-[10px] text-slate-600 text-center">predicciones en "escalera" — promedio por región</p>
+          </div>
+        }
+      />
+    ),
+
+    reg_rf: (
+      <AlgCard
+        emoji="🌲" name="Random Forest (Regresión)" color="emerald"
+        badge="Regresión · El más preciso en general"
+        desc="Crea muchos árboles de decisión de regresión, cada uno con una muestra aleatoria de datos y variables. La predicción final es el promedio de todos los árboles. Al promediar, las predicciones en 'escalera' se suavizan y se reduce drásticamente el error."
+        cuando="Cuando quieres máxima precisión con mínima configuración. Es el algoritmo de regresión recomendado para datasets tabulares medianos. También provee importancia de variables."
+        pros={['Alta precisión en casi todos los casos', 'Robusto ante outliers y ruido', 'Provee importancia de variables', 'Reduce drásticamente el overfitting vs árbol individual']}
+        contras={['Más lento que modelos lineales', 'No extrapola fuera del rango de entrenamiento', 'Consume más memoria', 'Difícil de interpretar individualmente']}
+        visual={
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2">
+              {['Árbol 1','Árbol 2','Árbol 3'].map((t,ti)=>(
+                <div key={t} className="rounded-lg border border-white/10 bg-white/5 p-2">
+                  <p className="text-[10px] text-slate-500 mb-1">{t}</p>
+                  <div className="relative h-10 bg-black/20 rounded overflow-hidden">
+                    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <polyline points={ti===0?"0,80 40,80 40,30 100,30":ti===1?"0,60 50,60 50,20 100,20":"0,70 35,70 35,40 100,40"} fill="none" stroke="rgb(52,211,153)" strokeWidth="3"/>
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center text-xs text-slate-500">↓ promedio de todos los árboles</div>
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2">
+              <div className="relative h-10 bg-black/20 rounded overflow-hidden">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <polyline points="0,70 20,68 40,55 60,35 80,28 100,27" fill="none" stroke="rgb(52,211,153)" strokeWidth="3"/>
+                </svg>
+              </div>
+              <p className="text-[10px] text-emerald-400 mt-1 text-center">resultado final suavizado</p>
+            </div>
+          </div>
+        }
+      />
+    ),
+
+    reg_svr: (
+      <AlgCard
+        emoji="🎯" name="SVR — Support Vector Regression" color="rose"
+        badge="Regresión · Robusto ante outliers"
+        desc="Versión de SVM para regresión. En vez de minimizar todos los errores, SVR solo penaliza los errores que superen un margen ε (épsilon). Los puntos dentro del margen son ignorados. Esto lo hace muy robusto ante valores atípicos. El kernel RBF le permite modelar relaciones no lineales."
+        cuando="Cuando el dataset tiene outliers significativos, relaciones no lineales, y es de tamaño mediano. Útil cuando los errores pequeños son aceptables y solo importa corregir los grandes."
+        pros={['Muy robusto ante outliers', 'Kernel RBF captura relaciones no lineales', 'Funciona bien en alta dimensionalidad', 'Control preciso del margen de error']}
+        contras={['Lento en datasets grandes', 'Requiere escalado de variables (StandardScaler)', 'Difícil de interpretar', 'Requiere ajuste de hiperparámetros (C, ε, gamma)']}
+        visual={
+          <div className="space-y-2">
+            <div className="relative h-24 rounded-lg bg-black/30 border border-white/10 overflow-hidden">
+              {[{x:10,y:70,out:false},{x:20,y:55,out:false},{x:30,y:48,out:false},{x:40,y:40,out:false},{x:50,y:35,out:false},{x:60,y:28,out:false},{x:65,y:5,out:true},{x:70,y:22,out:false},{x:80,y:18,out:false}].map((p,i)=>(
+                <div key={i} className={`absolute w-2.5 h-2.5 rounded-full border ${p.out?'bg-rose-500 border-rose-300':'bg-rose-400/60 border-rose-400/80'}`} style={{left:`${p.x}%`,top:`${p.y}%`,transform:'translate(-50%,-50%)'}}/>
+              ))}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="5" y1="75" x2="90" y2="15" stroke="rgb(251,113,133)" strokeWidth="1.5"/>
+                <line x1="5" y1="85" x2="90" y2="25" stroke="rgb(251,113,133)" strokeWidth="0.8" strokeDasharray="3,2"/>
+                <line x1="5" y1="65" x2="90" y2="5" stroke="rgb(251,113,133)" strokeWidth="0.8" strokeDasharray="3,2"/>
+              </svg>
+            </div>
+            <p className="text-[10px] text-slate-600 text-center">zona entre líneas punteadas = margen ε · punto rojo brillante = outlier ignorado</p>
+          </div>
+        }
+      />
+    ),
+
+    met_cls: (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-black text-white mb-1">Métricas de Clasificación</h2>
+          <p className="text-sm text-slate-500">Cómo evaluar si tu modelo de clasificación es bueno</p>
+        </div>
+        <div className="rounded-2xl border border-violet-500/30 bg-violet-500/5 p-4">
+          <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">Concepto base: Matriz de Confusión</p>
+          <div className="grid grid-cols-2 gap-2 text-center text-xs">
+            <div/><div className="text-slate-500 font-bold">Predicho +</div>
+            <div className="text-slate-500 font-bold">Real +</div>
+            <div className="rounded-lg bg-emerald-500/20 border border-emerald-500/30 p-2 text-emerald-400 font-bold">TP ✅<br/><span className="text-[10px] font-normal text-slate-500">Verdadero Positivo</span></div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center text-xs mt-0">
+            <div/><div className="text-slate-500 font-bold">Predicho −</div>
+            <div className="text-slate-500 font-bold">Real −</div>
+            <div className="rounded-lg bg-rose-500/20 border border-rose-500/30 p-2 text-rose-400 font-bold">FP ⚠<br/><span className="text-[10px] font-normal text-slate-500">Falso Positivo</span></div>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-2">TP=predijo + y era + · FP=predijo + pero era − · FN=predijo − pero era + · TN=predijo − y era −</p>
+        </div>
+        <div className="space-y-3">
+          <MetricBar label="Accuracy" value={0.85} color="violet" formula="(TP+TN) / Total" desc="Porcentaje de predicciones correctas sobre el total. Es la métrica más intuitiva pero puede ser engañosa con clases desbalanceadas." bueno="Cerca de 1.0 es ideal. En datos balanceados, >0.8 es bueno. Con clases desbalanceadas, prefiere F1-Score." />
+          <MetricBar label="Precision" value={0.78} color="blue" formula="TP / (TP+FP)" desc="De todos los casos que el modelo predijo como positivos, ¿cuántos realmente lo eran? Alta precision = pocos falsos positivos." bueno="Importante cuando el costo de un falso positivo es alto (ej: spam filter — no quieres marcar emails legítimos como spam)." />
+          <MetricBar label="Recall (Sensibilidad)" value={0.82} color="emerald" formula="TP / (TP+FN)" desc="De todos los casos realmente positivos, ¿cuántos detectó el modelo? Alto recall = pocos falsos negativos." bueno="Crítico cuando no detectar un positivo es muy costoso (ej: diagnóstico médico — no quieres perder un enfermo)." />
+          <MetricBar label="F1-Score" value={0.80} color="amber" formula="2 × (P × R) / (P + R)" desc="Media armónica entre Precision y Recall. Equilibra ambas métricas. Es la métrica recomendada cuando las clases están desbalanceadas." bueno="Cerca de 1.0 es ideal. Mejor métrica general para clasificación binaria desbalanceada." />
+          <MetricBar label="ROC-AUC" value={0.88} color="violet" formula="Área bajo curva ROC" desc="Mide la capacidad del modelo para discriminar entre clases independientemente del umbral de decisión. 0.5 = adivinar al azar, 1.0 = perfecto." bueno="&gt;0.9 = excelente · 0.8-0.9 = bueno · 0.7-0.8 = aceptable · &lt;0.7 = pobre. En mercados financieros, incluso 0.55 es difícil de lograr." />
+        </div>
+      </div>
+    ),
+
+    met_reg: (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-black text-white mb-1">Métricas de Regresión</h2>
+          <p className="text-sm text-slate-500">Cómo evaluar si tu modelo de regresión es preciso</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+          <p className="text-xs font-bold text-emerald-400 mb-2">Concepto base: error = valor_real − valor_predicho</p>
+          <div className="relative h-16 bg-black/30 rounded-lg overflow-hidden">
+            <svg className="w-full h-full" viewBox="0 0 200 60" preserveAspectRatio="none">
+              <line x1="10" y1="50" x2="190" y2="10" stroke="rgb(52,211,153)" strokeWidth="1.5"/>
+              {[[30,42,35],[60,25,28],[90,38,22],[130,18,20],[160,12,10]].map(([x,real,pred],i)=>(
+                <g key={i}>
+                  <circle cx={x} cy={real} r="3" fill="rgb(251,191,36)"/>
+                  <circle cx={x} cy={pred} r="2" fill="rgb(52,211,153)" fillOpacity="0.7"/>
+                  <line x1={x} y1={real} x2={x} y2={pred} stroke="rgb(251,191,36)" strokeWidth="1" strokeDasharray="2,1"/>
+                </g>
+              ))}
+            </svg>
+          </div>
+          <div className="flex gap-4 mt-2 text-[10px]"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block"/>valor real</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"/>predicho</span><span className="flex items-center gap-1"><span className="w-4 border-t border-dashed border-amber-400 inline-block"/>error</span></div>
+        </div>
+        <div className="space-y-3">
+          <MetricBar label="R² — Coeficiente de Determinación" value={0.95} color="emerald" formula="1 − (SS_res / SS_tot)" desc="Qué porcentaje de la variación en los datos explica el modelo. 0 = el modelo no explica nada (como predecir la media siempre). 1 = explicación perfecta." bueno="&gt;0.9 = excelente · 0.7-0.9 = bueno · 0.5-0.7 = moderado · &lt;0.5 = pobre. Un R² muy alto puede indicar overfitting." />
+          <MetricBar label="MAE — Error Absoluto Medio" value={0.3} color="blue" formula="Promedio |real − predicho|" desc="Promedio de los errores absolutos. Está en las mismas unidades que el dato original (ej: si predices precios en USD, el MAE estará en USD). Fácil de interpretar." bueno="Depende de la escala del dato. Para precios de acciones de ~$13, un MAE de $0.24 es excelente (~2% de error)." />
+          <MetricBar label="RMSE — Raíz del Error Cuadrático Medio" value={0.35} color="amber" formula="√(Promedio (real − predicho)²)" desc="Similar a MAE pero penaliza más los errores grandes (al elevar al cuadrado). Sensible a outliers. En las mismas unidades que el dato original." bueno="Siempre mayor o igual que MAE. Si RMSE >> MAE, indica que hay algunos errores muy grandes. Minimizarlo reduce los errores más graves." />
+          <MetricBar label="MSE — Error Cuadrático Medio" value={0.25} color="violet" formula="Promedio (real − predicho)²" desc="Similar a RMSE pero sin la raíz cuadrada, por lo que está en unidades al cuadrado. Útil internamente para optimización pero difícil de interpretar directamente." bueno="RMSE = √MSE. Preferir RMSE para interpretación. MSE es más útil para comparar modelos entre sí matemáticamente." />
+          <MetricBar label="MAPE — Error Porcentual Absoluto Medio" value={0.6} color="emerald" formula="Promedio |error / real| × 100" desc="Error expresado como porcentaje del valor real. Muy fácil de comunicar: 'el modelo se equivoca en promedio un X%'. No depende de la escala." bueno="&lt;5% = excelente · 5-10% = bueno · 10-20% = aceptable · &gt;20% = pobre. Cuidado: se dispara si hay valores reales cercanos a cero." />
+        </div>
+      </div>
+    ),
+  }
+
+  const allItems = nav.flatMap(g => g.items)
+  const currentIdx = allItems.findIndex(i => i.id === activeTopic)
+
+  return (
+    <div className="fixed inset-0 z-50 flex bg-[#080B14]/97 backdrop-blur-xl">
+      {/* Sidebar */}
+      <div className="w-64 shrink-0 border-r border-white/10 bg-black/20 flex flex-col">
+        <div className="p-4 border-b border-white/10">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-lg">❓</span>
+            <h2 className="font-black text-white">Centro de Ayuda</h2>
+          </div>
+          <p className="text-xs text-slate-600 ml-7">Guía de conceptos de ML</p>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {nav.map(grupo => (
+            <div key={grupo.grupo}>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 px-2 mb-1.5 flex items-center gap-1.5">
+                <span>{grupo.icon}</span> {grupo.grupo}
+              </p>
+              <div className="space-y-0.5">
+                {grupo.items.map(item => (
+                  <button key={item.id} onClick={() => setActiveTopic(item.id)}
+                    className={`w-full text-left rounded-xl px-3 py-2 text-xs font-semibold transition-all
+                      ${activeTopic === item.id
+                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        : 'text-slate-500 hover:bg-white/5 hover:text-white border border-transparent'}`}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="p-3 border-t border-white/10">
+          <button onClick={onClose}
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition">
+            ✕ Cerrar ayuda
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-8 py-8">
+          {topics[activeTopic]}
+          {/* Navegación anterior / siguiente */}
+          <div className="flex justify-between mt-10 pt-6 border-t border-white/10">
+            <button
+              onClick={() => currentIdx > 0 && setActiveTopic(allItems[currentIdx - 1].id)}
+              disabled={currentIdx === 0}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition disabled:opacity-30 disabled:cursor-not-allowed">
+              ← {currentIdx > 0 ? allItems[currentIdx - 1].label : ''}
+            </button>
+            <span className="text-xs text-slate-700 self-center">{currentIdx + 1} / {allItems.length}</span>
+            <button
+              onClick={() => currentIdx < allItems.length - 1 && setActiveTopic(allItems[currentIdx + 1].id)}
+              disabled={currentIdx === allItems.length - 1}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition disabled:opacity-30 disabled:cursor-not-allowed">
+              {currentIdx < allItems.length - 1 ? allItems[currentIdx + 1].label : ''} →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Manual de Usuario ─────────────────────────────────────────────────────────
 function ViewManual({ onClose }) {
   const [activePhase, setActivePhase] = useState(0)
@@ -556,6 +1196,7 @@ export default function App() {
   const [successMsg, setSuccessMsg] = useState('')
   const [showArq, setShowArq]       = useState(false)
   const [showManual, setShowManual] = useState(false)
+  const [showAyuda, setShowAyuda]   = useState(false)
   const [dataInfo, setDataInfo]     = useState(null)
   const [cleanOpts, setCleanOpts]   = useState({ eliminar_duplicados: false, estrategia_nulos: 'ninguna' })
   const [target, setTarget]         = useState('')
@@ -650,6 +1291,7 @@ export default function App() {
     <div className="min-h-screen bg-[#080B14] text-white">
       {showArq    && <ViewArquitectura onClose={() => setShowArq(false)} />}
       {showManual && <ViewManual       onClose={() => setShowManual(false)} />}
+      {showAyuda  && <ViewAyuda        onClose={() => setShowAyuda(false)} />}
       {/* Grid background */}
       <div className="fixed inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
       {/* Ambient glow orbs */}
@@ -669,6 +1311,10 @@ export default function App() {
             <p className="text-xs text-slate-600">Proyecto Final Inteligencia Artificial · Unisabaneta</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <button onClick={() => setShowAyuda(true)}
+              className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 transition">
+              ❓ Ayuda
+            </button>
             <button onClick={() => setShowArq(true)}
               className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition">
               🏗 Arquitectura
