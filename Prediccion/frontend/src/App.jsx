@@ -1243,7 +1243,11 @@ export default function App() {
   const cleanData = async () => {
     setLoading(true); setError('')
     try {
-      const { data } = await axios.post(`${API}/clean`, cleanOpts)
+      const { data } = await axios.post(`${API}/clean`, {
+        records: dataInfo.records,
+        columnas: dataInfo.columnas,
+        opciones: cleanOpts,
+      })
       setDataInfo(prev => ({ ...prev, ...data, problemas: [] }))
       setSuccessMsg(`Limpieza: ${data.acciones?.join(' · ') || 'Sin cambios'}`)
     } catch (e) { handleError(e) } finally { setLoading(false) }
@@ -1255,6 +1259,8 @@ export default function App() {
     setLoading(true); setError('')
     try {
       const { data } = await axios.post(`${API}/train`, {
+        records: dataInfo.records,
+        columnas: dataInfo.columnas,
         target, task_type: taskType, algorithm, test_size: testSize,
         features: selFeatures.filter(f => f !== target),
       })
@@ -1266,7 +1272,13 @@ export default function App() {
 
   const predict = async () => {
     setPredLoading(true); setError('')
-    try { const { data } = await axios.post(`${API}/predict`, { valores: predVals }); setPredResult(data) }
+    try {
+      const { data } = await axios.post(`${API}/predict`, {
+        model_state: trainResults.model_state,
+        valores: predVals,
+      })
+      setPredResult(data)
+    }
     catch (e) { setError(e?.response?.data?.detail || 'Error en predicción') }
     finally { setPredLoading(false) }
   }

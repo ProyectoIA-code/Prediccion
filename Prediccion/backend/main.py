@@ -1,6 +1,6 @@
 import io
-import json
 import base64
+import joblib
 import warnings
 from typing import Any, Dict, List, Optional
 
@@ -21,7 +21,7 @@ from sklearn.metrics import (
     mean_squared_error, precision_score, r2_score, recall_score, roc_auc_score,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.svm import SVC, SVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -39,9 +39,6 @@ app.add_middleware(
 )
 
 
-# ── Manejador global de errores (siempre con headers CORS) ────────────────────
-
-
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
@@ -50,168 +47,41 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers={'Access-Control-Allow-Origin': '*'},
     )
 
-# ── In-memory session state ───────────────────────────────────────────────────
-current_df: Optional[pd.DataFrame] = None
-trained_model = None
-label_encoders: Dict[str, LabelEncoder] = {}
-scaler: Optional[StandardScaler] = None
-model_config: Dict = {}
-feature_columns: List[str] = []
-
 
 # ── Demo data generators ──────────────────────────────────────────────────────
 
 def gen_vivienda() -> pd.DataFrame:
-    """
-    Dataset de vivienda Colombia 2026 — 1000 registros con precios realistas.
-    Referencia: apartamento 60 m² estrato 4 Medellín ≈ 320-400 M COP.
-    Precio/m² base 2026 (M COP): Bogotá 8.2 · Medellín 6.5 · Cartagena 6.0 · Cali 4.8 · Barranquilla 4.3
-    """
     rng = np.random.default_rng(42)
-    n = 1000
-
+    n = 300
     ciudades = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena']
-    ciudad = rng.choice(ciudades, n, p=[0.35, 0.28, 0.18, 0.11, 0.08])
-
-    estrato = rng.choice([1, 2, 3, 4, 5, 6], n, p=[0.08, 0.17, 0.30, 0.25, 0.14, 0.06])
-
-    tipo_inmueble = np.where(
-        estrato <= 3,
-        rng.choice(['Apartamento', 'Casa'], n, p=[0.52, 0.48]),
-        rng.choice(['Apartamento', 'Casa'], n, p=[0.78, 0.22]),
-    )
-
-    area = np.where(
-        tipo_inmueble == 'Casa',
-        rng.integers(70, 380, n),
-        rng.integers(38, 210, n),
-    )
-
-    habitaciones = np.clip(area // 32 + rng.integers(-1, 2, n), 1, 7)
-    banos        = np.clip(habitaciones - 1 + rng.integers(0, 2, n), 1, 6)
-    antiguedad   = rng.integers(0, 31, n)
-
-    parqueaderos  = np.where(
-        estrato >= 3,
-        rng.choice([0, 1, 2], n, p=[0.08, 0.62, 0.30]),
-        rng.choice([0, 1],    n, p=[0.55, 0.45]),
-    )
-    cuarto_util      = rng.choice([0, 1], n, p=[0.32, 0.68])
-    conjunto_cerrado = np.where(
-        estrato >= 3,
-        rng.choice([0, 1], n, p=[0.12, 0.88]),
-        rng.choice([0, 1], n, p=[0.42, 0.58]),
-    )
-    piso = np.where(
-        tipo_inmueble == 'Apartamento',
-        rng.integers(1, 22, n),
-        np.ones(n, dtype=int),
-    )
-
-    zonas_ciudad = {
-        'Bogotá':       ['Chapinero', 'Usaquén', 'Suba', 'Kennedy', 'Bosa'],
-        'Medellín':     ['El Poblado', 'Laureles', 'Belén', 'Robledo', 'Itagüí'],
-        'Cali':         ['Ciudad Jardín', 'El Ingenio', 'San Antonio', 'Aguablanca', 'Chipichape'],
-        'Barranquilla': ['El Prado', 'Riomar', 'Villa Santos', 'Soledad', 'Suroriente'],
-        'Cartagena':    ['Bocagrande', 'Manga', 'Pie de la Popa', 'La Boquilla', 'Turbaco'],
-    }
-    zona_factor_map = {
-        'Bogotá':       [1.20, 1.15, 0.95, 0.82, 0.78],
-        'Medellín':     [1.30, 1.12, 0.90, 0.80, 0.85],
-        'Cali':         [1.18, 1.05, 0.88, 0.72, 1.02],
-        'Barranquilla': [1.22, 1.15, 0.98, 0.80, 0.75],
-        'Cartagena':    [1.35, 1.10, 1.05, 1.20, 0.80],
-    }
-
-    zona     = np.empty(n, dtype=object)
-    zona_fac = np.ones(n)
-    for c in ciudades:
-        mask = ciudad == c
-        idx  = rng.integers(0, 5, mask.sum())
-        zona[mask]     = np.array(zonas_ciudad[c])[idx]
-        zona_fac[mask] = np.array(zona_factor_map[c])[idx]
-
-    # Precio/m² base por ciudad (M COP, 2026)
-    pm2 = np.array([
-        8.2 if c == 'Bogotá' else
-        6.5 if c == 'Medellín' else
-        4.8 if c == 'Cali' else
-        4.3 if c == 'Barranquilla' else
-        6.0   # Cartagena
-        for c in ciudad
-    ])
-
-    estrato_fac  = np.array([0.46, 0.64, 0.82, 1.00, 1.30, 1.68])[estrato - 1]
-    tipo_fac     = np.where(tipo_inmueble == 'Casa', 0.82, 1.00)
-    piso_fac     = np.where(
-        tipo_inmueble == 'Apartamento',
-        1.0 + np.clip((piso - 5) * 0.009, -0.04, 0.14),
-        1.0,
-    )
-    amenidad_bon = parqueaderos * 0.038 + cuarto_util * 0.013 + conjunto_cerrado * 0.027
-    antig_fac    = np.maximum(0.70, 1.0 - antiguedad * 0.009)
-
-    precio = (
-        pm2 * area * estrato_fac * tipo_fac * piso_fac * zona_fac
-        * (1 + amenidad_bon) * antig_fac
-        + rng.normal(0, 1, n) * pm2 * area * 0.05
-    )
-    precio = np.round(np.maximum(90, precio), 1)
-
-    return pd.DataFrame({
-        'tipo_inmueble':    tipo_inmueble,
-        'ciudad':           ciudad,
-        'zona':             zona,
-        'estrato':          estrato,
-        'area_m2':          area,
-        'habitaciones':     habitaciones,
-        'banos':            banos,
-        'piso':             piso,
-        'parqueaderos':     parqueaderos,
-        'cuarto_util':      cuarto_util,
-        'conjunto_cerrado': conjunto_cerrado,
-        'antiguedad_anos':  antiguedad,
-        'precio_millones_cop': precio,
-    })
+    ciudad = rng.choice(ciudades, n, p=[0.35, 0.25, 0.20, 0.10, 0.10])
+    estrato = rng.choice([1, 2, 3, 4, 5, 6], n, p=[0.10, 0.20, 0.30, 0.20, 0.15, 0.05])
+    area = rng.integers(42, 280, n)
+    habitaciones = np.clip(area // 45 + rng.integers(-1, 2, n), 1, 6)
+    banos = np.clip(habitaciones - 1 + rng.integers(0, 2, n), 1, 5)
+    antiguedad = rng.integers(0, 36, n)
+    garaje = np.where(estrato >= 3, 1, rng.integers(0, 2, n)).astype(int)
+    ascensor = np.where(estrato >= 4, 1, rng.integers(0, 2, n)).astype(int)
+    base = np.array([5.2 if c=='Bogotá' else 4.5 if c=='Medellín' else 4.0 if c=='Cartagena' else 3.4 if c=='Cali' else 3.0 for c in ciudad])
+    precio = (base * estrato * area * 0.011 + habitaciones * 12 + garaje * 48 + ascensor * 28 - antiguedad * 1.6 + rng.normal(0, 22, n))
+    precio = np.round(np.maximum(50, precio), 1)
+    return pd.DataFrame({'area_m2': area, 'habitaciones': habitaciones, 'banos': banos, 'estrato': estrato, 'ciudad': ciudad, 'antiguedad_anos': antiguedad, 'garaje': garaje, 'ascensor': ascensor, 'precio_millones_cop': precio})
 
 
 def gen_credito() -> pd.DataFrame:
     rng = np.random.default_rng(123)
     n = 300
     edad = rng.integers(20, 66, n)
-    ingresos_base = rng.choice(
-        [1_300_000, 2_000_000, 3_500_000, 5_000_000, 8_000_000, 12_000_000],
-        n, p=[0.15, 0.25, 0.30, 0.15, 0.10, 0.05],
-    )
-    ingresos = np.maximum(1_300_000, ingresos_base + rng.integers(-200_000, 200_001, n))
+    ingresos = np.maximum(1_300_000, rng.choice([1_300_000,2_000_000,3_500_000,5_000_000,8_000_000,12_000_000], n, p=[0.15,0.25,0.30,0.15,0.10,0.05]) + rng.integers(-200_000, 200_001, n))
     score = np.clip(rng.normal(600, 120, n).astype(int), 300, 850)
-    deuda = rng.choice(
-        [0, 500_000, 1_500_000, 3_000_000, 6_000_000, 10_000_000],
-        n, p=[0.20, 0.20, 0.25, 0.20, 0.10, 0.05],
-    )
+    deuda = rng.choice([0,500_000,1_500_000,3_000_000,6_000_000,10_000_000], n, p=[0.20,0.20,0.25,0.20,0.10,0.05])
     monto = np.round(ingresos * rng.uniform(2, 10, n), -3).astype(int)
     plazo = rng.choice([12, 24, 36, 48, 60, 72], n)
     empleado = rng.choice([0, 1], n, p=[0.25, 0.75])
-
     ratio = (deuda + monto / plazo) / ingresos
-    prob = (
-        0.30 * (score / 850)
-        + 0.30 * (1 - np.clip(ratio, 0, 1))
-        + 0.20 * empleado
-        + 0.20 * np.clip((ingresos - 1_300_000) / 10_700_000, 0, 1)
-    )
-    aprobado = (rng.uniform(0, 1, n) < prob).astype(int)
-
-    return pd.DataFrame({
-        'edad': edad,
-        'ingresos_mensuales_cop': ingresos,
-        'score_crediticio': score,
-        'deuda_actual_cop': deuda,
-        'monto_solicitado_cop': monto,
-        'plazo_meses': plazo,
-        'empleado_formal': empleado,
-        'aprobado': aprobado,
-    })
+    prob = 0.30*(score/850) + 0.30*(1-np.clip(ratio,0,1)) + 0.20*empleado + 0.20*np.clip((ingresos-1_300_000)/10_700_000,0,1)
+    aprobado = (rng.uniform(0,1,n) < prob).astype(int)
+    return pd.DataFrame({'edad': edad, 'ingresos_mensuales_cop': ingresos, 'score_crediticio': score, 'deuda_actual_cop': deuda, 'monto_solicitado_cop': monto, 'plazo_meses': plazo, 'empleado_formal': empleado, 'aprobado': aprobado})
 
 
 def gen_churn() -> pd.DataFrame:
@@ -222,66 +92,28 @@ def gen_churn() -> pd.DataFrame:
     transacciones = rng.poisson(12, n)
     productos = rng.choice([1, 2, 3, 4], n, p=[0.30, 0.35, 0.25, 0.10])
     meses = rng.integers(1, 61, n)
-    quejas = rng.choice([0, 1, 2, 3, 4], n, p=[0.50, 0.25, 0.15, 0.07, 0.03])
+    quejas = rng.choice([0,1,2,3,4], n, p=[0.50,0.25,0.15,0.07,0.03])
     uso_app = np.clip(rng.poisson(5, n), 0, 30)
-
-    prob = (
-        0.30 * (1 - np.clip(saldo / 5_000_000, 0, 1))
-        + 0.25 * (1 - np.clip(transacciones / 20, 0, 1))
-        + 0.20 * (quejas / 4)
-        + 0.15 * (1 - np.clip(uso_app / 10, 0, 1))
-        + 0.10 * (1 - productos / 4)
-    )
-    churn = (rng.uniform(0, 1, n) < prob).astype(int)
-
-    return pd.DataFrame({
-        'edad': edad,
-        'saldo_promedio_cop': saldo,
-        'transacciones_mes': transacciones,
-        'productos_activos': productos,
-        'meses_como_cliente': meses,
-        'quejas_ultimo_ano': quejas,
-        'uso_app_semanal': uso_app,
-        'churn': churn,
-    })
+    prob = 0.30*(1-np.clip(saldo/5_000_000,0,1)) + 0.25*(1-np.clip(transacciones/20,0,1)) + 0.20*(quejas/4) + 0.15*(1-np.clip(uso_app/10,0,1)) + 0.10*(1-productos/4)
+    churn = (rng.uniform(0,1,n) < prob).astype(int)
+    return pd.DataFrame({'edad': edad, 'saldo_promedio_cop': saldo, 'transacciones_mes': transacciones, 'productos_activos': productos, 'meses_como_cliente': meses, 'quejas_ultimo_ano': quejas, 'uso_app_semanal': uso_app, 'churn': churn})
 
 
-DEMO_GENERATORS = {
-    'vivienda': gen_vivienda,
-    'credito': gen_credito,
-    'churn': gen_churn,
-}
+DEMO_GENERATORS = {'vivienda': gen_vivienda, 'credito': gen_credito, 'churn': gen_churn}
 
 DEMO_META = {
-    'vivienda': {
-        'nombre': 'Compra de Vivienda',
-        'descripcion': 'Predice el precio en millones COP según área, estrato, ciudad y características',
-        'tarea_sugerida': 'regresion',
-        'target_sugerido': 'precio_millones_cop',
-        'icono': '🏠',
-    },
-    'credito': {
-        'nombre': 'Aprobación de Crédito',
-        'descripcion': 'Clasifica si un crédito bancario colombiano será aprobado o rechazado',
-        'tarea_sugerida': 'clasificacion',
-        'target_sugerido': 'aprobado',
-        'icono': '💳',
-    },
-    'churn': {
-        'nombre': 'Deserción de Clientes (Churn)',
-        'descripcion': 'Predice qué clientes de un neobank colombiano dejarán de usar el servicio',
-        'tarea_sugerida': 'clasificacion',
-        'target_sugerido': 'churn',
-        'icono': '📉',
-    },
+    'vivienda': {'nombre': 'Compra de Vivienda', 'descripcion': 'Predice el precio en millones COP según área, estrato, ciudad y características', 'tarea_sugerida': 'regresion', 'target_sugerido': 'precio_millones_cop', 'icono': '🏠'},
+    'credito':  {'nombre': 'Aprobación de Crédito', 'descripcion': 'Clasifica si un crédito bancario colombiano será aprobado o rechazado', 'tarea_sugerida': 'clasificacion', 'target_sugerido': 'aprobado', 'icono': '💳'},
+    'churn':    {'nombre': 'Deserción de Clientes (Churn)', 'descripcion': 'Predice qué clientes de un neobank colombiano dejarán de usar el servicio', 'tarea_sugerida': 'clasificacion', 'target_sugerido': 'churn', 'icono': '📉'},
 }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _json_safe(val):
-    """Convierte cualquier valor de pandas/numpy a un tipo serializable en JSON."""
-    if val is None or (isinstance(val, float) and np.isnan(val)):
+    if val is None:
+        return None
+    if isinstance(val, float) and np.isnan(val):
         return None
     if isinstance(val, (np.integer,)):
         return int(val)
@@ -289,7 +121,7 @@ def _json_safe(val):
         return None if np.isnan(val) else float(val)
     if isinstance(val, (np.bool_,)):
         return bool(val)
-    if isinstance(val, (pd.Timestamp,)):
+    if isinstance(val, pd.Timestamp):
         return val.strftime('%Y-%m-%d')
     try:
         if pd.isna(val):
@@ -299,10 +131,14 @@ def _json_safe(val):
     return str(val) if not isinstance(val, (int, float, bool, str)) else val
 
 
-def df_summary(df: pd.DataFrame, extra: dict = None) -> dict:
+def df_to_summary(df: pd.DataFrame, extra: dict = None) -> dict:
+    """Convierte un DataFrame a un dict serializable con TODOS los registros."""
+    records_raw = df.to_dict(orient='records')
+    records = [{k: _json_safe(v) for k, v in row.items()} for row in records_raw]
     preview_raw = df.tail(10).to_dict(orient='records')
     preview = [{k: _json_safe(v) for k, v in row.items()} for row in preview_raw]
     result = {
+        'records': records,
         'columnas': [str(c) for c in df.columns],
         'filas': int(len(df)),
         'preview': preview,
@@ -344,38 +180,14 @@ def list_demos():
 
 @app.get('/demo/{nombre}')
 def load_demo(nombre: str):
-    global current_df, label_encoders, scaler, trained_model, model_config, feature_columns
-    if nombre not in DEMO_GENERATORS:
-        raise HTTPException(404, f"Demo '{nombre}' no encontrado")
-    current_df = DEMO_GENERATORS[nombre]()
-    label_encoders, scaler, trained_model, model_config, feature_columns = {}, None, None, {}, []
-    return df_summary(current_df, DEMO_META[nombre])
-
-
-@app.get('/demo/{nombre}/download')
-def download_demo(nombre: str):
     if nombre not in DEMO_GENERATORS:
         raise HTTPException(404, f"Demo '{nombre}' no encontrado")
     df = DEMO_GENERATORS[nombre]()
-    meta = DEMO_META[nombre]
-    buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name=meta['nombre'][:31])
-    buf.seek(0)
-    filename = f"IA_Predict_Demo_{nombre}_2026.xlsx"
-    return StreamingResponse(
-        buf,
-        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={
-            'Content-Disposition': f'attachment; filename="{filename}"',
-            'Access-Control-Allow-Origin': '*',
-        },
-    )
+    return df_to_summary(df, DEMO_META[nombre])
 
 
 @app.post('/upload')
 async def upload_file(file: UploadFile = File(...)):
-    global current_df, label_encoders, scaler, trained_model, model_config, feature_columns
     content = await file.read()
     fname = file.filename or ''
     try:
@@ -385,8 +197,7 @@ async def upload_file(file: UploadFile = File(...)):
                 try:
                     candidate = pd.read_csv(io.BytesIO(content), sep=sep)
                     if candidate.shape[1] > 1:
-                        df = candidate
-                        break
+                        df = candidate; break
                 except Exception:
                     continue
             if df is None:
@@ -395,66 +206,86 @@ async def upload_file(file: UploadFile = File(...)):
             df = pd.read_excel(io.BytesIO(content))
         else:
             raise HTTPException(400, 'Formato no soportado. Use CSV o Excel (.xlsx, .xls)')
-
         if df.empty:
             raise HTTPException(400, 'El archivo está vacío')
-
-        current_df = df
-        label_encoders, scaler, trained_model, model_config, feature_columns = {}, None, None, {}, []
-        return df_summary(current_df, {'nombre_archivo': fname})
-
+        return df_to_summary(df, {'nombre_archivo': fname})
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(400, f'Error al procesar el archivo: {e}')
 
 
+# ── Clean (stateless: recibe records, devuelve records limpios) ───────────────
+
+class CleanRequest(BaseModel):
+    records: List[Dict[str, Any]]
+    columnas: List[str]
+    opciones: Dict[str, Any]
+
+
 @app.post('/clean')
-def clean_data(opciones: dict):
-    global current_df
-    if current_df is None:
-        raise HTTPException(400, 'No hay datos cargados')
+def clean_data(req: CleanRequest):
+    try:
+        df = pd.DataFrame(req.records, columns=req.columnas)
+        acciones: List[str] = []
 
-    df = current_df.copy()
-    acciones: List[str] = []
+        if req.opciones.get('eliminar_duplicados'):
+            antes = len(df)
+            df = df.drop_duplicates()
+            diff = antes - len(df)
+            if diff:
+                acciones.append(f'Eliminadas {diff} filas duplicadas')
 
-    if opciones.get('eliminar_duplicados'):
-        antes = len(df)
-        df = df.drop_duplicates()
-        diff = antes - len(df)
-        if diff:
-            acciones.append(f'Eliminadas {diff} filas duplicadas')
+        estrategia = req.opciones.get('estrategia_nulos', 'ninguna')
+        if estrategia == 'eliminar_filas':
+            antes = len(df)
+            df = df.dropna()
+            acciones.append(f'Eliminadas {antes - len(df)} filas con valores nulos')
+        elif estrategia in ('media', 'mediana', 'moda'):
+            for col in df.columns:
+                n_null = int(df[col].isnull().sum())
+                if n_null == 0:
+                    continue
+                if estrategia == 'media' and pd.api.types.is_numeric_dtype(df[col]):
+                    val = round(float(df[col].mean()), 2)
+                    df[col] = df[col].fillna(val)
+                    acciones.append(f"'{col}': {n_null} nulos → media ({val})")
+                elif estrategia == 'mediana' and pd.api.types.is_numeric_dtype(df[col]):
+                    val = round(float(df[col].median()), 2)
+                    df[col] = df[col].fillna(val)
+                    acciones.append(f"'{col}': {n_null} nulos → mediana ({val})")
+                elif estrategia == 'moda':
+                    val = df[col].mode().iloc[0]
+                    df[col] = df[col].fillna(val)
+                    acciones.append(f"'{col}': {n_null} nulos → moda ({val})")
 
-    estrategia = opciones.get('estrategia_nulos', 'ninguna')
-    if estrategia == 'eliminar_filas':
-        antes = len(df)
-        df = df.dropna()
-        acciones.append(f'Eliminadas {antes - len(df)} filas con valores nulos')
-    elif estrategia in ('media', 'mediana', 'moda'):
-        for col in df.columns:
-            n_null = int(df[col].isnull().sum())
-            if n_null == 0:
-                continue
-            if estrategia == 'media' and pd.api.types.is_numeric_dtype(df[col]):
-                val = round(float(df[col].mean()), 2)
-                df[col] = df[col].fillna(val)
-                acciones.append(f"'{col}': {n_null} nulos → media ({val})")
-            elif estrategia == 'mediana' and pd.api.types.is_numeric_dtype(df[col]):
-                val = round(float(df[col].median()), 2)
-                df[col] = df[col].fillna(val)
-                acciones.append(f"'{col}': {n_null} nulos → mediana ({val})")
-            elif estrategia == 'moda':
-                val = df[col].mode().iloc[0]
-                df[col] = df[col].fillna(val)
-                acciones.append(f"'{col}': {n_null} nulos → moda ({val})")
-
-    current_df = df
-    return df_summary(current_df, {'acciones': acciones})
+        return df_to_summary(df, {'acciones': acciones})
+    except Exception as e:
+        raise HTTPException(400, f'Error limpiando datos: {e}')
 
 
-# ── Train ─────────────────────────────────────────────────────────────────────
+# ── Train (stateless: recibe records + config, devuelve resultados + modelo serializado) ──
+
+MODELS_MAP = {
+    'regresion_logistica': lambda: LogisticRegression(max_iter=1000, random_state=42),
+    'arbol_decision_cls':  lambda: DecisionTreeClassifier(max_depth=10, random_state=42),
+    'random_forest_cls':   lambda: RandomForestClassifier(n_estimators=30, max_depth=8, random_state=42),
+    'svm':                 lambda: SVC(probability=True, random_state=42),
+    'knn':                 lambda: KNeighborsClassifier(n_neighbors=5),
+    'regresion_lineal':    LinearRegression,
+    'ridge':               lambda: Ridge(alpha=1.0),
+    'lasso':               lambda: Lasso(alpha=1.0, max_iter=5000),
+    'arbol_decision_reg':  lambda: DecisionTreeRegressor(max_depth=10, random_state=42),
+    'random_forest_reg':   lambda: RandomForestRegressor(n_estimators=30, max_depth=8, random_state=42),
+    'svr':                 lambda: SVR(kernel='rbf'),
+}
+
+NEEDS_SCALING = {'regresion_logistica', 'svm', 'knn', 'svr'}
+
 
 class TrainRequest(BaseModel):
+    records: List[Dict[str, Any]]
+    columnas: List[str]
     target: str
     task_type: str
     algorithm: str
@@ -462,57 +293,30 @@ class TrainRequest(BaseModel):
     features: Optional[List[str]] = None
 
 
-MODELS_MAP = {
-    # Clasificación
-    'regresion_logistica': lambda: LogisticRegression(max_iter=1000, random_state=42),
-    'arbol_decision_cls': lambda: DecisionTreeClassifier(max_depth=10, random_state=42),
-    'random_forest_cls': lambda: RandomForestClassifier(n_estimators=30, max_depth=8, random_state=42),
-    'svm': lambda: SVC(probability=True, random_state=42),
-    'knn': lambda: KNeighborsClassifier(n_neighbors=5),
-    # Regresión
-    'regresion_lineal': LinearRegression,
-    'ridge': lambda: Ridge(alpha=1.0),
-    'lasso': lambda: Lasso(alpha=1.0, max_iter=5000),
-    'arbol_decision_reg': lambda: DecisionTreeRegressor(max_depth=10, random_state=42),
-    'random_forest_reg': lambda: RandomForestRegressor(n_estimators=30, max_depth=8, random_state=42),
-    'svr': lambda: SVR(kernel='rbf'),
-}
-
-NEEDS_SCALING = {'regresion_logistica', 'svm', 'knn', 'svr'}
-
-
 @app.post('/train')
 def train(req: TrainRequest):
-    global current_df, trained_model, label_encoders, scaler, model_config, feature_columns
-
-    if current_df is None:
-        raise HTTPException(400, 'No hay datos cargados')
-    if req.target not in current_df.columns:
-        raise HTTPException(400, f"Columna '{req.target}' no existe")
     if req.algorithm not in MODELS_MAP:
         raise HTTPException(400, f"Algoritmo '{req.algorithm}' no reconocido")
 
-    feat_cols = [
-        f for f in (req.features or current_df.columns.tolist())
-        if f in current_df.columns and f != req.target
-    ]
+    df = pd.DataFrame(req.records, columns=req.columnas)
+
+    if req.target not in df.columns:
+        raise HTTPException(400, f"Columna '{req.target}' no existe")
+
+    feat_cols = [f for f in (req.features or df.columns.tolist()) if f in df.columns and f != req.target]
     if not feat_cols:
         raise HTTPException(400, 'No hay variables predictoras seleccionadas')
 
-    df = current_df[feat_cols + [req.target]].dropna().copy()
-    if len(df) < 20:
-        raise HTTPException(400, f'Solo quedan {len(df)} filas después de limpiar nulos, se necesitan al menos 20')
-
-    # Eliminar columnas de fecha/datetime (no son numéricas ni categóricas entrenables)
+    # Eliminar columnas datetime
     datetime_cols = df[feat_cols].select_dtypes(include=['datetime64', 'datetimetz']).columns.tolist()
-    if datetime_cols:
-        feat_cols = [f for f in feat_cols if f not in datetime_cols]
-        df = df[feat_cols + [req.target]]
-        if not feat_cols:
-            raise HTTPException(400, 'Todas las variables predictoras son fechas. Selecciona columnas numéricas o categóricas.')
+    feat_cols = [f for f in feat_cols if f not in datetime_cols]
+
+    df = df[feat_cols + [req.target]].dropna().copy()
+    if len(df) < 20:
+        raise HTTPException(400, f'Solo quedan {len(df)} filas, se necesitan al menos 20')
 
     # Encode categoricals
-    label_encoders = {}
+    label_encoders: Dict[str, LabelEncoder] = {}
     for col in df.select_dtypes(include='object').columns:
         le = LabelEncoder()
         df[col] = le.fit_transform(df[col].astype(str))
@@ -523,47 +327,35 @@ def train(req: TrainRequest):
     if req.task_type == 'clasificacion':
         y = y.astype(int)
 
-    # Scale if needed
+    scaler = None
     if req.algorithm in NEEDS_SCALING:
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
-    else:
-        scaler = None
 
-    feature_columns = feat_cols
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=req.test_size, random_state=42
-    )
-
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=req.test_size, random_state=42)
     model = MODELS_MAP[req.algorithm]()
     model.fit(X_train, y_train)
-    trained_model = model
-
-    model_config = {
-        'target': req.target,
-        'task_type': req.task_type,
-        'algorithm': req.algorithm,
-        'features': feat_cols,
-        'needs_scaling': req.algorithm in NEEDS_SCALING,
-    }
-
     y_pred = model.predict(X_test)
+
+    # Serializar modelo al frontend (base64)
+    model_b64  = base64.b64encode(joblib.dumps(model)).decode()
+    le_b64     = base64.b64encode(joblib.dumps(label_encoders)).decode()
+    scaler_b64 = base64.b64encode(joblib.dumps(scaler)).decode() if scaler else None
+
     charts: Dict[str, str] = {}
     metrics: Dict[str, float] = {}
 
     if req.task_type == 'clasificacion':
-        metrics['accuracy'] = round(float(accuracy_score(y_test, y_pred)), 4)
+        metrics['accuracy']  = round(float(accuracy_score(y_test, y_pred)), 4)
         metrics['precision'] = round(float(precision_score(y_test, y_pred, average='weighted', zero_division=0)), 4)
-        metrics['recall'] = round(float(recall_score(y_test, y_pred, average='weighted', zero_division=0)), 4)
-        metrics['f1_score'] = round(float(f1_score(y_test, y_pred, average='weighted', zero_division=0)), 4)
+        metrics['recall']    = round(float(recall_score(y_test, y_pred, average='weighted', zero_division=0)), 4)
+        metrics['f1_score']  = round(float(f1_score(y_test, y_pred, average='weighted', zero_division=0)), 4)
         if len(np.unique(y)) == 2:
             try:
                 y_prob = model.predict_proba(X_test)[:, 1]
                 metrics['roc_auc'] = round(float(roc_auc_score(y_test, y_prob)), 4)
             except Exception:
                 pass
-
-        # Confusion matrix
         cm = confusion_matrix(y_test, y_pred)
         labels = [str(c) for c in sorted(np.unique(y))]
         fig, ax = plt.subplots(figsize=(5, 4))
@@ -571,34 +363,26 @@ def train(req: TrainRequest):
                     xticklabels=[f'Pred {l}' for l in labels],
                     yticklabels=[f'Real {l}' for l in labels])
         ax.set_title('Matriz de Confusión', fontsize=13, fontweight='bold', pad=10)
-        ax.set_ylabel('Valor Real')
-        ax.set_xlabel('Valor Predicho')
+        ax.set_ylabel('Valor Real'); ax.set_xlabel('Valor Predicho')
         plt.tight_layout()
         charts['confusion_matrix'] = fig_to_b64(fig)
-
     else:
-        mae = float(mean_absolute_error(y_test, y_pred))
         mse = float(mean_squared_error(y_test, y_pred))
-        metrics['mae'] = round(mae, 4)
-        metrics['mse'] = round(mse, 4)
+        metrics['mae']  = round(float(mean_absolute_error(y_test, y_pred)), 4)
+        metrics['mse']  = round(mse, 4)
         metrics['rmse'] = round(float(np.sqrt(mse)), 4)
-        metrics['r2'] = round(float(r2_score(y_test, y_pred)), 4)
+        metrics['r2']   = round(float(r2_score(y_test, y_pred)), 4)
         safe_y = np.where(np.abs(y_test) < 1e-9, 1e-9, y_test)
         metrics['mape'] = round(float(np.mean(np.abs((y_test - y_pred) / safe_y))) * 100, 2)
-
-        # Scatter real vs predicted
         fig, ax = plt.subplots(figsize=(5, 4))
         ax.scatter(y_test, y_pred, alpha=0.55, color='#6366f1', edgecolors='white', linewidth=0.4, s=40)
         lo, hi = min(y_test.min(), y_pred.min()), max(y_test.max(), y_pred.max())
         ax.plot([lo, hi], [lo, hi], 'r--', linewidth=1.8, label='Predicción perfecta')
-        ax.set_xlabel('Valor Real')
-        ax.set_ylabel('Valor Predicho')
+        ax.set_xlabel('Valor Real'); ax.set_ylabel('Valor Predicho')
         ax.set_title('Real vs Predicho', fontsize=13, fontweight='bold', pad=10)
-        ax.legend(fontsize=9)
-        plt.tight_layout()
+        ax.legend(fontsize=9); plt.tight_layout()
         charts['scatter'] = fig_to_b64(fig)
 
-    # Feature importance / coefficients
     if hasattr(model, 'feature_importances_'):
         imp = model.feature_importances_
         idx = np.argsort(imp)[::-1]
@@ -609,8 +393,7 @@ def train(req: TrainRequest):
         ax.set_yticks(range(top))
         ax.set_yticklabels([feat_cols[i] for i in idx[:top]][::-1], fontsize=9)
         ax.set_title('Importancia de Variables', fontsize=13, fontweight='bold', pad=10)
-        ax.set_xlabel('Importancia relativa')
-        plt.tight_layout()
+        ax.set_xlabel('Importancia relativa'); plt.tight_layout()
         charts['feature_importance'] = fig_to_b64(fig)
     elif hasattr(model, 'coef_'):
         coef = model.coef_.flatten() if model.coef_.ndim > 1 else model.coef_
@@ -620,8 +403,7 @@ def train(req: TrainRequest):
             ax.barh(feat_cols, coef, color=colors)
             ax.axvline(0, color='black', linewidth=0.8, linestyle='--')
             ax.set_title('Coeficientes del Modelo', fontsize=13, fontweight='bold', pad=10)
-            ax.set_xlabel('Coeficiente')
-            plt.tight_layout()
+            ax.set_xlabel('Coeficiente'); plt.tight_layout()
             charts['feature_importance'] = fig_to_b64(fig)
 
     return {
@@ -633,27 +415,38 @@ def train(req: TrainRequest):
         'filas_prueba': int(len(X_test)),
         'features_usadas': feat_cols,
         'columnas_categoricas': list(label_encoders.keys()),
-        'opciones_categoricas': {
-            col: list(le.classes_)
-            for col, le in label_encoders.items()
-            if col in feat_cols
+        'opciones_categoricas': {col: list(le.classes_) for col, le in label_encoders.items() if col in feat_cols},
+        # ← modelo serializado para guardarlo en el frontend
+        'model_state': {
+            'model_b64':  model_b64,
+            'le_b64':     le_b64,
+            'scaler_b64': scaler_b64,
+            'feature_columns': feat_cols,
+            'task_type':  req.task_type,
+            'algorithm':  req.algorithm,
         },
     }
 
 
-# ── Predict ───────────────────────────────────────────────────────────────────
+# ── Predict (stateless: recibe model_state + valores) ─────────────────────────
 
 class PredictRequest(BaseModel):
+    model_state: Dict[str, Any]
     valores: Dict[str, Any]
 
 
 @app.post('/predict')
 def predict(req: PredictRequest):
-    if trained_model is None:
-        raise HTTPException(400, 'No hay modelo entrenado')
     try:
+        ms = req.model_state
+        model          = joblib.loads(base64.b64decode(ms['model_b64']))
+        label_encoders = joblib.loads(base64.b64decode(ms['le_b64']))
+        scaler         = joblib.loads(base64.b64decode(ms['scaler_b64'])) if ms.get('scaler_b64') else None
+        feat_cols      = ms['feature_columns']
+        task_type      = ms['task_type']
+
         row = []
-        for col in feature_columns:
+        for col in feat_cols:
             val = req.valores.get(col)
             if val is None or str(val).strip() == '':
                 raise HTTPException(400, f"Falta el valor para '{col}'")
@@ -667,23 +460,17 @@ def predict(req: PredictRequest):
             row.append(val)
 
         X = np.array([row])
-        if model_config.get('needs_scaling') and scaler is not None:
+        if scaler is not None:
             X = scaler.transform(X)
 
-        pred = trained_model.predict(X)[0]
-        result: Dict[str, Any] = {
-            'prediccion': float(pred),
-            'task_type': model_config['task_type'],
-        }
-        if model_config['task_type'] == 'clasificacion':
-            result['clase'] = int(pred)
+        pred = model.predict(X)[0]
+        result: Dict[str, Any] = {'prediccion': float(pred), 'task_type': task_type}
+        if task_type == 'clasificacion':
+            result['clase']   = int(pred)
             result['etiqueta'] = 'Sí / Positivo' if int(pred) == 1 else 'No / Negativo'
-            if hasattr(trained_model, 'predict_proba'):
-                proba = trained_model.predict_proba(X)[0]
-                result['probabilidades'] = [
-                    {'clase': str(c), 'prob': round(float(p), 4)}
-                    for c, p in zip(trained_model.classes_, proba)
-                ]
+            if hasattr(model, 'predict_proba'):
+                proba = model.predict_proba(X)[0]
+                result['probabilidades'] = [{'clase': str(c), 'prob': round(float(p), 4)} for c, p in zip(model.classes_, proba)]
         return result
     except HTTPException:
         raise
