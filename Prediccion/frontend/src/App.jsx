@@ -1113,8 +1113,8 @@ function StepBar({ current }) {
 const DEMOS = [
   {
     id: 'vivienda', icon: '🏠', title: 'Compra de Vivienda',
-    desc: 'Predice el precio en millones COP según área, estrato, ciudad y características.',
-    task: 'Regresión', rows: 300,
+    desc: 'Predice el precio en millones COP — datos reales 2026 por ciudad, zona, estrato y tipo de inmueble.',
+    task: 'Regresión', rows: 1000,
     gradient: 'from-blue-600/20 to-indigo-600/20',
     border: 'hover:border-blue-500/50',
     glow: 'hover:shadow-blue-500/10',
