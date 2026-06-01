@@ -325,7 +325,7 @@ export default function App() {
               <h2 className="text-3xl font-black tracking-tight">
                 Carga tu <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">dataset</span>
               </h2>
-              <p className="mt-2 text-slate-500">Sube tu archivo o elige un ejemplo con datos reales de Colombia</p>
+              <p className="mt-2 text-slate-500">Sube tu archivo o elige un ejemplo con datos reales</p>
             </div>
 
             <Card>
@@ -720,7 +720,7 @@ export default function App() {
       </main>
 
       <footer className="relative z-10 mt-16 border-t border-white/5 py-4 text-center text-xs text-slate-700">
-        Proyecto Final Inteligencia Artificial - Unisabaneta
+        © 2025 Proyecto Final Inteligencia Artificial - Unisabaneta · Ivonne Díaz · Christian Buitrago · Miguel Guerrero
       </footer>
     </div>
   )
