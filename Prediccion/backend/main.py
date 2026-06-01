@@ -28,7 +28,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 warnings.filterwarnings('ignore')
 
-app = FastAPI(title='ML Studio Colombia', version='1.0.0')
+app = FastAPI(title='IA Predict · Grupo FDS 674', version='1.0.0')
 
 app.add_middleware(
     CORSMiddleware,
@@ -334,7 +334,7 @@ def fig_to_b64(fig) -> str:
 
 @app.get('/')
 def root():
-    return {'status': 'ok', 'app': 'ML Studio Colombia'}
+    return {'status': 'ok', 'app': 'IA Predict · Grupo FDS 674'}
 
 
 @app.get('/demos')
