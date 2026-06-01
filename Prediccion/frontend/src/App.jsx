@@ -3,6 +3,368 @@ import axios from 'axios'
 
 const API = 'https://ml-studio-backend-it5p.onrender.com'
 
+// ── Arquitectura ──────────────────────────────────────────────────────────────
+function ViewArquitectura({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#080B14]/95 backdrop-blur-xl">
+      <div className="mx-auto max-w-4xl px-4 py-10">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-black text-white">Arquitectura del <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">Proyecto</span></h2>
+            <p className="text-sm text-slate-500 mt-1">Cómo están conectadas las partes de la aplicación</p>
+          </div>
+          <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        {/* Diagrama visual */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6 text-center">Diagrama de flujo</h3>
+          <div className="flex flex-col items-center gap-3">
+
+            {/* Usuario */}
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 px-6 py-4 w-full max-w-sm">
+              <span className="text-2xl">👤</span>
+              <div>
+                <p className="font-bold text-blue-300">Usuario</p>
+                <p className="text-xs text-slate-400">Sube datos y configura el modelo desde el navegador</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-0.5 h-6 bg-gradient-to-b from-blue-500 to-violet-500" />
+              <span className="text-xs text-slate-500 bg-slate-900 px-2 border border-white/10 rounded-full">Internet (HTTPS)</span>
+              <div className="w-0.5 h-6 bg-gradient-to-b from-violet-500 to-indigo-500" />
+            </div>
+
+            {/* Frontend */}
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-6 py-4 w-full max-w-sm">
+              <span className="text-2xl">🖥</span>
+              <div>
+                <p className="font-bold text-violet-300">Frontend — Vercel</p>
+                <p className="text-xs text-slate-400">Interfaz visual hecha en React · prediccion-roan.vercel.app</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-0.5 h-6 bg-gradient-to-b from-indigo-500 to-violet-500" />
+              <span className="text-xs text-slate-500 bg-slate-900 px-2 border border-white/10 rounded-full">Llamadas a la API (JSON)</span>
+              <div className="w-0.5 h-6 bg-gradient-to-b from-violet-500 to-emerald-500" />
+            </div>
+
+            {/* Backend */}
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-4 w-full max-w-sm">
+              <span className="text-2xl">⚙️</span>
+              <div>
+                <p className="font-bold text-emerald-300">Backend — Render</p>
+                <p className="text-xs text-slate-400">Servidor Python con FastAPI · ml-studio-backend-it5p.onrender.com</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-0.5 h-6 bg-gradient-to-b from-emerald-500 to-amber-500" />
+              <span className="text-xs text-slate-500 bg-slate-900 px-2 border border-white/10 rounded-full">Procesa y entrena</span>
+              <div className="w-0.5 h-6 bg-gradient-to-b from-amber-500 to-orange-500" />
+            </div>
+
+            {/* ML */}
+            <div className="flex items-center justify-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-4 w-full max-w-sm">
+              <span className="text-2xl">🤖</span>
+              <div>
+                <p className="font-bold text-amber-300">Motor de Machine Learning</p>
+                <p className="text-xs text-slate-400">scikit-learn · pandas · matplotlib · numpy</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Capas */}
+        <div className="grid gap-4 sm:grid-cols-3 mb-6">
+          {[
+            {
+              icon: '🖥', title: 'Interfaz Visual', color: 'violet',
+              items: ['React — librería para construir interfaces', 'Tailwind CSS — estilos modernos', 'Axios — comunicación con el servidor', 'Vercel — publicación en internet gratis'],
+            },
+            {
+              icon: '⚙️', title: 'Servidor (Backend)', color: 'emerald',
+              items: ['Python — lenguaje de programación', 'FastAPI — framework para crear APIs', 'Render — servidor en la nube gratis', 'Recibe archivos y devuelve resultados'],
+            },
+            {
+              icon: '🤖', title: 'Inteligencia Artificial', color: 'amber',
+              items: ['scikit-learn — algoritmos de ML', 'pandas — manejo de datos y tablas', 'matplotlib/seaborn — gráficas', 'numpy — cálculos matemáticos'],
+            },
+          ].map(layer => {
+            const colors = {
+              violet: 'border-violet-500/30 bg-violet-500/10',
+              emerald: 'border-emerald-500/30 bg-emerald-500/10',
+              amber:   'border-amber-500/30 bg-amber-500/10',
+            }
+            const textColors = {
+              violet: 'text-violet-300', emerald: 'text-emerald-300', amber: 'text-amber-300',
+            }
+            return (
+              <div key={layer.title} className={`rounded-2xl border p-4 ${colors[layer.color]}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{layer.icon}</span>
+                  <p className={`font-bold text-sm ${textColors[layer.color]}`}>{layer.title}</p>
+                </div>
+                <ul className="space-y-1.5">
+                  {layer.items.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-slate-400">
+                      <span className="text-slate-600 mt-0.5">▸</span>{item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* GitHub */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <h3 className="font-bold text-slate-300 mb-3 flex items-center gap-2"><span>📦</span> Repositorio de código</h3>
+          <p className="text-sm text-slate-400 mb-2">Todo el código fuente está disponible públicamente en GitHub:</p>
+          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs text-violet-400">
+            github.com/ProyectoIA-code/Prediccion
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
+            <div>📁 <span className="text-slate-400">Prediccion/backend/</span> — Código Python</div>
+            <div>📁 <span className="text-slate-400">Prediccion/frontend/</span> — Código React</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+// ── Manual de Usuario ─────────────────────────────────────────────────────────
+function ViewManual({ onClose }) {
+  const [activePhase, setActivePhase] = useState(0)
+
+  const phases = [
+    {
+      num: '01', icon: '📁', title: 'Cargar datos',
+      color: 'blue',
+      desc: 'El primer paso es cargar el dataset que deseas analizar.',
+      steps: [
+        'Arrastra tu archivo CSV o Excel al área indicada, o haz clic para seleccionarlo desde tu computador.',
+        'También puedes elegir uno de los 3 ejemplos precargados: Vivienda, Crédito o Churn.',
+        'El sistema detectará automáticamente las columnas y mostrará una vista previa de los datos.',
+      ],
+      tip: 'Los archivos deben tener encabezados en la primera fila. Formatos aceptados: .csv, .xlsx, .xls',
+    },
+    {
+      num: '02', icon: '🧹', title: 'Explorar y limpiar',
+      color: 'violet',
+      desc: 'Revisa la calidad de tus datos y corrígelos antes de entrenar.',
+      steps: [
+        'Verás un resumen de todas las columnas: nombre, tipo de dato y cantidad de valores vacíos.',
+        'Si hay datos vacíos (nulos), puedes elegir cómo manejarlos: eliminar las filas, rellenar con el promedio, la mediana o el valor más frecuente.',
+        'Si hay filas duplicadas, puedes eliminarlas con un clic.',
+        'Una vez limpios los datos, haz clic en "Continuar".',
+      ],
+      tip: 'Datos limpios = mejores predicciones. Es importante no saltarse este paso.',
+    },
+    {
+      num: '03', icon: '⚙️', title: 'Configurar modelo',
+      color: 'emerald',
+      desc: 'Define qué quieres predecir y con qué algoritmo.',
+      steps: [
+        'Selecciona la Variable Objetivo: la columna que el modelo intentará predecir.',
+        'Elige el Tipo de tarea: Clasificación (predice categorías como Sí/No) o Regresión (predice números como precios).',
+        'Ajusta la división de datos: qué porcentaje usar para entrenamiento (recomendado 80%) y cuál para prueba (20%).',
+        'Selecciona el Algoritmo que deseas usar.',
+        'Elige las variables predictoras (por defecto todas excepto la objetivo).',
+        'Haz clic en "Entrenar modelo".',
+      ],
+      tip: 'Si tu variable objetivo tiene valores como 0/1, Sí/No → usa Clasificación. Si tiene valores numéricos continuos como precios → usa Regresión.',
+    },
+    {
+      num: '04', icon: '📊', title: 'Ver resultados',
+      color: 'amber',
+      desc: 'Analiza qué tan bien aprendió tu modelo.',
+      steps: [
+        'Verás las métricas de evaluación del modelo según el tipo de tarea.',
+        'Para Clasificación: Accuracy, Precision, Recall, F1-Score y ROC-AUC.',
+        'Para Regresión: R², MAE, RMSE, MSE y MAPE.',
+        'Se mostrarán gráficas: Matriz de Confusión (clasificación) o Dispersión Real vs Predicho (regresión).',
+        'También verás la Importancia de Variables: cuáles columnas influyeron más en el modelo.',
+      ],
+      tip: 'Un R² cercano a 1 en regresión o un Accuracy alto en clasificación indican un buen modelo.',
+    },
+    {
+      num: '05', icon: '🔮', title: 'Hacer predicciones',
+      color: 'rose',
+      desc: 'Usa el modelo entrenado para predecir nuevos casos.',
+      steps: [
+        'Ve a la pestaña "Predicción" dentro de Resultados.',
+        'Completa el formulario con los valores del caso que deseas predecir.',
+        'Las variables categóricas (texto) muestran un menú desplegable con las opciones disponibles.',
+        'Las variables numéricas tienen un campo de texto.',
+        'Haz clic en "Predecir" y verás el resultado inmediatamente.',
+        'Para clasificación también verás la probabilidad de cada clase.',
+      ],
+      tip: 'Puedes hacer todas las predicciones que necesites sin necesidad de volver a entrenar el modelo.',
+    },
+  ]
+
+  const models = [
+    {
+      tipo: 'Clasificación', color: 'violet', icon: '🏷',
+      desc: 'Predice a qué categoría pertenece algo (Sí/No, Aprobado/Rechazado, etc.)',
+      algoritmos: [
+        { name: 'Regresión Logística', use: 'Ideal para empezar. Rápido y fácil de interpretar.' },
+        { name: 'Árbol de Decisión', use: 'Muy visual e interpretable. Como un árbol de preguntas.' },
+        { name: 'Random Forest', use: 'Muy preciso. Combina muchos árboles de decisión.' },
+        { name: 'SVM', use: 'Efectivo con muchas variables. Más complejo.' },
+        { name: 'KNN', use: 'Predice basándose en los casos más similares.' },
+      ],
+    },
+    {
+      tipo: 'Regresión', color: 'emerald', icon: '📈',
+      desc: 'Predice un valor numérico continuo (precio, edad, cantidad, etc.)',
+      algoritmos: [
+        { name: 'Regresión Lineal', use: 'La más simple. Buena para relaciones directas.' },
+        { name: 'Ridge (L2)', use: 'Regresión lineal con control para evitar errores grandes.' },
+        { name: 'Lasso (L1)', use: 'También selecciona automáticamente las variables más importantes.' },
+        { name: 'Árbol de Decisión', use: 'Captura relaciones complejas entre variables.' },
+        { name: 'Random Forest', use: 'El más preciso en general para regresión.' },
+        { name: 'SVR', use: 'Robusto ante datos con ruido o valores atípicos.' },
+      ],
+    },
+  ]
+
+  const colorMap = {
+    blue:   { border: 'border-blue-500/30',   bg: 'bg-blue-500/10',   text: 'text-blue-300',   num: 'bg-blue-500' },
+    violet: { border: 'border-violet-500/30', bg: 'bg-violet-500/10', text: 'text-violet-300', num: 'bg-violet-500' },
+    emerald:{ border: 'border-emerald-500/30',bg: 'bg-emerald-500/10',text: 'text-emerald-300',num: 'bg-emerald-500' },
+    amber:  { border: 'border-amber-500/30',  bg: 'bg-amber-500/10',  text: 'text-amber-300',  num: 'bg-amber-500' },
+    rose:   { border: 'border-rose-500/30',   bg: 'bg-rose-500/10',   text: 'text-rose-300',   num: 'bg-rose-500' },
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#080B14]/95 backdrop-blur-xl">
+      <div className="mx-auto max-w-4xl px-4 py-10">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-black text-white">Manual de <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">Usuario</span></h2>
+            <p className="text-sm text-slate-500 mt-1">Guía completa para usar la aplicación paso a paso</p>
+          </div>
+          <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-400 hover:text-white transition">✕ Cerrar</button>
+        </div>
+
+        {/* Fases navegables */}
+        <div className="mb-6">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Fases de uso</h3>
+          <div className="flex gap-2 flex-wrap">
+            {phases.map((p, i) => (
+              <button key={i} onClick={() => setActivePhase(i)}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all flex items-center gap-1.5
+                  ${activePhase === i
+                    ? `${colorMap[p.color].border} ${colorMap[p.color].bg} ${colorMap[p.color].text}`
+                    : 'border-white/10 bg-white/5 text-slate-500 hover:text-white'}`}>
+                <span>{p.icon}</span> {p.num} {p.title}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Fase activa */}
+        {(() => {
+          const p = phases[activePhase]
+          const c = colorMap[p.color]
+          return (
+            <div className={`rounded-2xl border ${c.border} ${c.bg} p-6 mb-6`}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.num} text-white font-black text-sm`}>{p.num}</div>
+                <div>
+                  <p className={`font-black text-lg ${c.text}`}>{p.icon} {p.title}</p>
+                  <p className="text-sm text-slate-400">{p.desc}</p>
+                </div>
+              </div>
+              <ol className="space-y-3 mb-4">
+                {p.steps.map((step, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${c.num} text-white text-xs font-black`}>{i + 1}</span>
+                    <p className="text-sm text-slate-300 leading-relaxed">{step}</p>
+                  </li>
+                ))}
+              </ol>
+              <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 flex items-start gap-2">
+                <span className="text-amber-400 text-sm shrink-0">💡</span>
+                <p className="text-xs text-slate-400">{p.tip}</p>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Modelos */}
+        <div className="mb-6">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Modelos disponibles</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {models.map(m => {
+              const c = colorMap[m.color]
+              return (
+                <div key={m.tipo} className={`rounded-2xl border ${c.border} ${c.bg} p-5`}>
+                  <p className={`font-black text-sm mb-1 ${c.text}`}>{m.icon} {m.tipo}</p>
+                  <p className="text-xs text-slate-400 mb-3">{m.desc}</p>
+                  <div className="space-y-2">
+                    {m.algoritmos.map((alg, i) => (
+                      <div key={i} className="rounded-lg border border-white/5 bg-black/20 px-3 py-2">
+                        <p className="text-xs font-bold text-slate-300">{alg.name}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{alg.use}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Métricas */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <h3 className="font-bold text-slate-300 mb-4 flex items-center gap-2"><span>📏</span> Métricas de evaluación</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">Clasificación</p>
+              {[
+                { name: 'Accuracy',  def: '¿Qué % de predicciones fueron correctas?' },
+                { name: 'Precision', def: '¿De los que predijo positivos, cuántos lo eran?' },
+                { name: 'Recall',    def: '¿De los positivos reales, cuántos detectó?' },
+                { name: 'F1-Score',  def: 'Balance entre Precision y Recall.' },
+                { name: 'ROC-AUC',  def: 'Capacidad general de discriminar entre clases.' },
+              ].map(m => (
+                <div key={m.name} className="flex gap-2 py-1.5 border-b border-white/5">
+                  <span className="text-xs font-bold text-slate-300 w-20 shrink-0">{m.name}</span>
+                  <span className="text-xs text-slate-500">{m.def}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">Regresión</p>
+              {[
+                { name: 'R²',   def: '¿Qué % de la variación explica el modelo? (0 a 1)' },
+                { name: 'MAE',  def: 'Error promedio en las mismas unidades del dato.' },
+                { name: 'RMSE', def: 'Error cuadrático. Penaliza errores grandes.' },
+                { name: 'MSE',  def: 'Error cuadrático medio (sin raíz).' },
+                { name: 'MAPE', def: 'Error en porcentaje. Fácil de interpretar.' },
+              ].map(m => (
+                <div key={m.name} className="flex gap-2 py-1.5 border-b border-white/5">
+                  <span className="text-xs font-bold text-slate-300 w-20 shrink-0">{m.name}</span>
+                  <span className="text-xs text-slate-500">{m.def}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
 // ── Spinner ───────────────────────────────────────────────────────────────────
 function Spinner() {
   return (
@@ -192,6 +554,8 @@ export default function App() {
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState('')
   const [successMsg, setSuccessMsg] = useState('')
+  const [showArq, setShowArq]       = useState(false)
+  const [showManual, setShowManual] = useState(false)
   const [dataInfo, setDataInfo]     = useState(null)
   const [cleanOpts, setCleanOpts]   = useState({ eliminar_duplicados: false, estrategia_nulos: 'ninguna' })
   const [target, setTarget]         = useState('')
@@ -284,6 +648,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#080B14] text-white">
+      {showArq    && <ViewArquitectura onClose={() => setShowArq(false)} />}
+      {showManual && <ViewManual       onClose={() => setShowManual(false)} />}
       {/* Grid background */}
       <div className="fixed inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
       {/* Ambient glow orbs */}
@@ -302,11 +668,21 @@ export default function App() {
             </h1>
             <p className="text-xs text-slate-600">Proyecto Final Inteligencia Artificial · Unisabaneta</p>
           </div>
-          {dataInfo && (
-            <button onClick={resetAll} className="ml-auto text-xs text-slate-600 hover:text-red-400 transition underline">
-              Reiniciar
+          <div className="ml-auto flex items-center gap-2">
+            <button onClick={() => setShowArq(true)}
+              className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition">
+              🏗 Arquitectura
             </button>
-          )}
+            <button onClick={() => setShowManual(true)}
+              className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 hover:bg-violet-500/20 transition">
+              📖 Manual
+            </button>
+            {dataInfo && (
+              <button onClick={resetAll} className="text-xs text-slate-600 hover:text-red-400 transition underline ml-1">
+                Reiniciar
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
