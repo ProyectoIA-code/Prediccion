@@ -1266,7 +1266,7 @@ export default function App() {
       })
       setTrainResults(data)
       const initVals = {}; data.features_usadas.forEach(f => { initVals[f] = '' })
-      setPredVals(initVals); setPredResult(null); setActiveTab('metricas'); setStep(4)
+      setPredVals(initVals); setPredResult(null); setActiveTab('prediccion'); setStep(4)
     } catch (e) { handleError(e) } finally { setLoading(false) }
   }
 
@@ -1648,7 +1648,7 @@ export default function App() {
             </div>
 
             <div className="flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1 w-fit backdrop-blur-sm">
-              {[{ id: 'metricas', label: '📊 Métricas' }, { id: 'prediccion', label: '🔮 Predicción' }].map(tab => (
+              {[{ id: 'prediccion', label: '🔮 Predicción' }, { id: 'metricas', label: '📊 Métricas' }].map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`rounded-lg px-5 py-2 text-sm font-bold transition-all
                     ${activeTab === tab.id
