@@ -98,7 +98,7 @@ def gen_vivienda() -> pd.DataFrame:
         rng.choice([0, 1, 2], n, p=[0.08, 0.62, 0.30]),
         rng.choice([0, 1],    n, p=[0.55, 0.45]),
     )
-    deposito         = rng.choice([0, 1], n, p=[0.32, 0.68])
+    cuarto_util      = rng.choice([0, 1], n, p=[0.32, 0.68])
     conjunto_cerrado = np.where(
         estrato >= 3,
         rng.choice([0, 1], n, p=[0.12, 0.88]),
@@ -150,7 +150,7 @@ def gen_vivienda() -> pd.DataFrame:
         1.0 + np.clip((piso - 5) * 0.009, -0.04, 0.14),
         1.0,
     )
-    amenidad_bon = parqueaderos * 0.038 + deposito * 0.013 + conjunto_cerrado * 0.027
+    amenidad_bon = parqueaderos * 0.038 + cuarto_util * 0.013 + conjunto_cerrado * 0.027
     antig_fac    = np.maximum(0.70, 1.0 - antiguedad * 0.009)
 
     precio = (
@@ -170,7 +170,7 @@ def gen_vivienda() -> pd.DataFrame:
         'banos':            banos,
         'piso':             piso,
         'parqueaderos':     parqueaderos,
-        'deposito':         deposito,
+        'cuarto_util':      cuarto_util,
         'conjunto_cerrado': conjunto_cerrado,
         'antiguedad_anos':  antiguedad,
         'precio_millones_cop': precio,
