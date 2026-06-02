@@ -915,225 +915,166 @@ function ViewAyuda({ onClose }) {
   )
 }
 
-// ── Manual de Usuario ─────────────────────────────────────────────────────────
+// ── Flujo de Uso ──────────────────────────────────────────────────────────────
 function ViewManual({ onClose }) {
-  const [activePhase, setActivePhase] = useState(0)
+  const [active, setActive] = useState(0)
 
-  const phases = [
+  const steps = [
     {
-      num: '01', icon: '📁', title: 'Cargar datos',
-      color: 'blue',
-      desc: 'El primer paso es cargar el dataset que deseas analizar.',
-      steps: [
-        'Arrastra tu archivo CSV o Excel al área indicada, o haz clic para seleccionarlo desde tu computador.',
-        'También puedes elegir uno de los 3 ejemplos precargados: Vivienda, Crédito o Churn.',
-        'El sistema detectará automáticamente las columnas y mostrará una vista previa de los datos.',
+      num: 1, icon: '📂', label: 'Cargar',
+      title: 'Carga tus datos',
+      subtitle: 'El punto de partida: dile al sistema con qué información va a trabajar.',
+      color: { pill: 'bg-blue-500', ring: 'ring-blue-400', text: 'text-blue-300', light: 'bg-blue-500/10 border-blue-500/25' },
+      cards: [
+        { icon: '⬆️', title: 'Sube tu archivo',    desc: 'CSV o Excel desde tu computador' },
+        { icon: '🏠', title: 'Demo Vivienda',       desc: '1.000 inmuebles listos para usar' },
+        { icon: '💳', title: 'Demo Crédito',        desc: '300 solicitudes bancarias' },
+        { icon: '📉', title: 'Demo Churn',          desc: '300 clientes de un neobank' },
       ],
-      tip: 'Los archivos deben tener encabezados en la primera fila. Formatos aceptados: .csv, .xlsx, .xls',
+      tip: { icon: '✅', text: 'Formatos aceptados: .csv · .xlsx · .xls' },
     },
     {
-      num: '02', icon: '🧹', title: 'Explorar y limpiar',
-      color: 'violet',
-      desc: 'Revisa la calidad de tus datos y corrígelos antes de entrenar.',
-      steps: [
-        'Verás un resumen de todas las columnas: nombre, tipo de dato y cantidad de valores vacíos.',
-        'Si hay datos vacíos (nulos), puedes elegir cómo manejarlos: eliminar las filas, rellenar con el promedio, la mediana o el valor más frecuente.',
-        'Si hay filas duplicadas, puedes eliminarlas con un clic.',
-        'Una vez limpios los datos, haz clic en "Continuar".',
+      num: 2, icon: '🧹', label: 'Limpiar',
+      title: 'Limpia tus datos',
+      subtitle: 'Antes de enseñarle al modelo, asegúrate de que los datos estén en buen estado.',
+      color: { pill: 'bg-violet-500', ring: 'ring-violet-400', text: 'text-violet-300', light: 'bg-violet-500/10 border-violet-500/25' },
+      cards: [
+        { icon: '🔍', title: 'Revisa columnas',     desc: 'Ve cuántos datos vacíos tiene cada una' },
+        { icon: '🗑️', title: 'Elimina duplicados',  desc: 'Quita filas repetidas con un clic' },
+        { icon: '🔧', title: 'Rellena vacíos',      desc: 'Con promedio, mediana o valor más común' },
+        { icon: '⬇️', title: 'Descarga el demo',    desc: 'Guarda el dataset en Excel' },
       ],
-      tip: 'Datos limpios = mejores predicciones. Es importante no saltarse este paso.',
+      tip: { icon: '💡', text: 'Datos limpios = predicciones más precisas.' },
     },
     {
-      num: '03', icon: '⚙️', title: 'Configurar modelo',
-      color: 'emerald',
-      desc: 'Define qué quieres predecir y con qué algoritmo.',
-      steps: [
-        'Selecciona la Variable Objetivo: la columna que el modelo intentará predecir.',
-        'Elige el Tipo de tarea: Clasificación (predice categorías como Sí/No) o Regresión (predice números como precios).',
-        'Ajusta la división de datos: qué porcentaje usar para entrenamiento (recomendado 80%) y cuál para prueba (20%).',
-        'Selecciona el Algoritmo que deseas usar.',
-        'Elige las variables predictoras (por defecto todas excepto la objetivo).',
-        'Haz clic en "Entrenar modelo".',
+      num: 3, icon: '⚙️', label: 'Configurar',
+      title: 'Configura el modelo',
+      subtitle: 'Dile al sistema qué quieres predecir y cómo quieres que aprenda.',
+      color: { pill: 'bg-emerald-500', ring: 'ring-emerald-400', text: 'text-emerald-300', light: 'bg-emerald-500/10 border-emerald-500/25' },
+      cards: [
+        { icon: '🎯', title: 'Variable objetivo',   desc: '¿Qué columna quieres predecir?' },
+        { icon: '🔀', title: 'Tipo de tarea',       desc: 'Clasificación (Sí/No) o Regresión (número)' },
+        { icon: '🤖', title: 'Elige algoritmo',     desc: '5 para clasificar · 6 para regresión' },
+        { icon: '📐', title: 'División 80/20',      desc: '80% para aprender · 20% para evaluar' },
       ],
-      tip: 'Si tu variable objetivo tiene valores como 0/1, Sí/No → usa Clasificación. Si tiene valores numéricos continuos como precios → usa Regresión.',
+      tip: { icon: '💡', text: '¿No sabes cuál elegir? Prueba Random Forest — funciona bien en casi todos los casos.' },
     },
     {
-      num: '04', icon: '📊', title: 'Ver resultados',
-      color: 'amber',
-      desc: 'Analiza qué tan bien aprendió tu modelo.',
-      steps: [
-        'Verás las métricas de evaluación del modelo según el tipo de tarea.',
-        'Para Clasificación: Accuracy, Precision, Recall, F1-Score y ROC-AUC.',
-        'Para Regresión: R², MAE, RMSE, MSE y MAPE.',
-        'Se mostrarán gráficas: Matriz de Confusión (clasificación) o Dispersión Real vs Predicho (regresión).',
-        'También verás la Importancia de Variables: cuáles columnas influyeron más en el modelo.',
+      num: 4, icon: '📊', label: 'Resultados',
+      title: 'Analiza los resultados',
+      subtitle: 'El modelo ya aprendió. Ahora puedes ver qué tan bien lo hizo.',
+      color: { pill: 'bg-amber-500', ring: 'ring-amber-400', text: 'text-amber-300', light: 'bg-amber-500/10 border-amber-500/25' },
+      cards: [
+        { icon: '🎯', title: 'Precisión (Accuracy)', desc: '¿Cuántas predicciones acertó el modelo?' },
+        { icon: '📈', title: 'Gráfica de errores',   desc: 'Real vs lo que predijo el modelo' },
+        { icon: '🌡️', title: 'Matriz de confusión',  desc: 'Dónde acertó y dónde se equivocó' },
+        { icon: '⭐', title: 'Variables clave',       desc: '¿Qué datos influyeron más en la predicción?' },
       ],
-      tip: 'Un R² cercano a 1 en regresión o un Accuracy alto en clasificación indican un buen modelo.',
+      tip: { icon: '✅', text: 'Un modelo con Accuracy > 75% o R² > 0.8 se considera bueno.' },
     },
     {
-      num: '05', icon: '🔮', title: 'Hacer predicciones',
-      color: 'rose',
-      desc: 'Usa el modelo entrenado para predecir nuevos casos.',
-      steps: [
-        'Ve a la pestaña "Predicción" dentro de Resultados.',
-        'Completa el formulario con los valores del caso que deseas predecir.',
-        'Las variables categóricas (texto) muestran un menú desplegable con las opciones disponibles.',
-        'Las variables numéricas tienen un campo de texto.',
-        'Haz clic en "Predecir" y verás el resultado inmediatamente.',
-        'Para clasificación también verás la probabilidad de cada clase.',
+      num: 5, icon: '🔮', label: 'Predecir',
+      title: 'Haz predicciones',
+      subtitle: 'El momento más importante: ingresa un caso nuevo y el modelo te dice qué va a pasar.',
+      color: { pill: 'bg-rose-500', ring: 'ring-rose-400', text: 'text-rose-300', light: 'bg-rose-500/10 border-rose-500/25' },
+      cards: [
+        { icon: '📝', title: 'Rellena el formulario', desc: 'Un campo por cada variable del modelo' },
+        { icon: '🔽', title: 'Menús desplegables',    desc: 'Para columnas de texto o categorías' },
+        { icon: '🔢', title: 'Campos numéricos',      desc: 'Para columnas de números' },
+        { icon: '⚡', title: 'Resultado al instante', desc: 'La predicción aparece en segundos' },
       ],
-      tip: 'Puedes hacer todas las predicciones que necesites sin necesidad de volver a entrenar el modelo.',
+      tip: { icon: '🔁', text: 'Puedes predecir tantos casos como quieras sin volver a entrenar.' },
     },
   ]
 
-  const models = [
-    {
-      tipo: 'Clasificación', color: 'violet', icon: '🏷',
-      desc: 'Predice a qué categoría pertenece algo (Sí/No, Aprobado/Rechazado, etc.)',
-      algoritmos: [
-        { name: 'Regresión Logística', use: 'Ideal para empezar. Rápido y fácil de interpretar.' },
-        { name: 'Árbol de Decisión', use: 'Muy visual e interpretable. Como un árbol de preguntas.' },
-        { name: 'Random Forest', use: 'Muy preciso. Combina muchos árboles de decisión.' },
-        { name: 'SVM', use: 'Efectivo con muchas variables. Más complejo.' },
-        { name: 'KNN', use: 'Predice basándose en los casos más similares.' },
-      ],
-    },
-    {
-      tipo: 'Regresión', color: 'emerald', icon: '📈',
-      desc: 'Predice un valor numérico continuo (precio, edad, cantidad, etc.)',
-      algoritmos: [
-        { name: 'Regresión Lineal', use: 'La más simple. Buena para relaciones directas.' },
-        { name: 'Ridge (L2)', use: 'Regresión lineal con control para evitar errores grandes.' },
-        { name: 'Lasso (L1)', use: 'También selecciona automáticamente las variables más importantes.' },
-        { name: 'Árbol de Decisión', use: 'Captura relaciones complejas entre variables.' },
-        { name: 'Random Forest', use: 'El más preciso en general para regresión.' },
-        { name: 'SVR', use: 'Robusto ante datos con ruido o valores atípicos.' },
-      ],
-    },
-  ]
-
-  const colorMap = {
-    blue:   { border: 'border-blue-500/30',   bg: 'bg-blue-500/10',   text: 'text-blue-300',   num: 'bg-blue-500' },
-    violet: { border: 'border-violet-500/30', bg: 'bg-violet-500/10', text: 'text-violet-300', num: 'bg-violet-500' },
-    emerald:{ border: 'border-emerald-500/30',bg: 'bg-emerald-500/10',text: 'text-emerald-300',num: 'bg-emerald-500' },
-    amber:  { border: 'border-amber-500/30',  bg: 'bg-amber-500/10',  text: 'text-amber-300',  num: 'bg-amber-500' },
-    rose:   { border: 'border-rose-500/30',   bg: 'bg-rose-500/10',   text: 'text-rose-300',   num: 'bg-rose-500' },
-  }
+  const cur = steps[active]
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#080B14]/95 backdrop-blur-xl">
-      <div className="mx-auto max-w-4xl px-4 py-10">
-        <div className="flex items-center justify-between mb-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
+      <div className="w-full max-w-2xl rounded-3xl bg-slate-800 shadow-2xl overflow-hidden">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-white/8">
           <div>
-            <h2 className="text-2xl font-black text-white">Manual de <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">Usuario</span></h2>
-            <p className="text-sm text-slate-500 mt-1">Guía completa para usar la aplicación paso a paso</p>
+            <h2 className="text-xl font-black text-white tracking-tight">
+              Flujo de <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">uso</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">Cómo funciona la app · {active + 1} de {steps.length}</p>
           </div>
-          <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-400 hover:text-white transition">✕ Cerrar</button>
+          <button onClick={onClose}
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400 hover:text-white hover:bg-white/10 transition">
+            ✕ Cerrar
+          </button>
         </div>
 
-        {/* Fases navegables */}
-        <div className="mb-6">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Fases de uso</h3>
-          <div className="flex gap-2 flex-wrap">
-            {phases.map((p, i) => (
-              <button key={i} onClick={() => setActivePhase(i)}
-                className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all flex items-center gap-1.5
-                  ${activePhase === i
-                    ? `${colorMap[p.color].border} ${colorMap[p.color].bg} ${colorMap[p.color].text}`
-                    : 'border-white/10 bg-white/5 text-slate-500 hover:text-white'}`}>
-                <span>{p.icon}</span> {p.num} {p.title}
+        {/* ── Stepper ── */}
+        <div className="flex items-center gap-0 px-7 py-5">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-center flex-1 last:flex-none">
+              <button onClick={() => setActive(i)} className="flex flex-col items-center gap-1.5 group">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black transition-all ring-2 ring-offset-2 ring-offset-slate-800
+                  ${i === active
+                    ? `${s.color.pill} text-white ${s.color.ring}`
+                    : i < active
+                    ? 'bg-slate-600 text-slate-300 ring-transparent'
+                    : 'bg-slate-700 text-slate-500 ring-transparent group-hover:bg-slate-600 group-hover:text-slate-300'}`}>
+                  {i < active ? '✓' : s.icon}
+                </div>
+                <span className={`text-[10px] font-bold hidden sm:block transition-colors
+                  ${i === active ? cur.color.text : i < active ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {s.label}
+                </span>
               </button>
+              {i < steps.length - 1 && (
+                <div className={`flex-1 h-0.5 mx-1 mb-4 rounded-full transition-colors ${i < active ? 'bg-slate-500' : 'bg-slate-700'}`} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* ── Contenido ── */}
+        <div className="px-7 pb-7">
+          {/* Título del paso */}
+          <div className={`rounded-2xl border p-5 mb-4 ${cur.color.light}`}>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-3xl">{cur.icon}</span>
+              <div>
+                <h3 className={`text-lg font-black ${cur.color.text}`}>{cur.title}</h3>
+                <p className="text-sm text-slate-400 leading-snug">{cur.subtitle}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Cards de acción */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {cur.cards.map((c, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-xl bg-slate-700/50 border border-white/5 px-4 py-3">
+                <span className="text-xl shrink-0 mt-0.5">{c.icon}</span>
+                <div>
+                  <p className="text-sm font-bold text-slate-200">{c.title}</p>
+                  <p className="text-xs text-slate-400 mt-0.5 leading-snug">{c.desc}</p>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Fase activa */}
-        {(() => {
-          const p = phases[activePhase]
-          const c = colorMap[p.color]
-          return (
-            <div className={`rounded-2xl border ${c.border} ${c.bg} p-6 mb-6`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.num} text-white font-black text-sm`}>{p.num}</div>
-                <div>
-                  <p className={`font-black text-lg ${c.text}`}>{p.icon} {p.title}</p>
-                  <p className="text-sm text-slate-400">{p.desc}</p>
-                </div>
-              </div>
-              <ol className="space-y-3 mb-4">
-                {p.steps.map((step, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${c.num} text-white text-xs font-black`}>{i + 1}</span>
-                    <p className="text-sm text-slate-300 leading-relaxed">{step}</p>
-                  </li>
-                ))}
-              </ol>
-              <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 flex items-start gap-2">
-                <span className="text-amber-400 text-sm shrink-0">💡</span>
-                <p className="text-xs text-slate-400">{p.tip}</p>
-              </div>
-            </div>
-          )
-        })()}
-
-        {/* Modelos */}
-        <div className="mb-6">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Modelos disponibles</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {models.map(m => {
-              const c = colorMap[m.color]
-              return (
-                <div key={m.tipo} className={`rounded-2xl border ${c.border} ${c.bg} p-5`}>
-                  <p className={`font-black text-sm mb-1 ${c.text}`}>{m.icon} {m.tipo}</p>
-                  <p className="text-xs text-slate-400 mb-3">{m.desc}</p>
-                  <div className="space-y-2">
-                    {m.algoritmos.map((alg, i) => (
-                      <div key={i} className="rounded-lg border border-white/5 bg-black/20 px-3 py-2">
-                        <p className="text-xs font-bold text-slate-300">{alg.name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{alg.use}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
+          {/* Tip */}
+          <div className="flex items-center gap-3 rounded-xl bg-slate-700/30 border border-white/5 px-4 py-3">
+            <span className="text-lg shrink-0">{cur.tip.icon}</span>
+            <p className="text-xs text-slate-300">{cur.tip.text}</p>
           </div>
-        </div>
 
-        {/* Métricas */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <h3 className="font-bold text-slate-300 mb-4 flex items-center gap-2"><span>📏</span> Métricas de evaluación</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-2">Clasificación</p>
-              {[
-                { name: 'Accuracy',  def: '¿Qué % de predicciones fueron correctas?' },
-                { name: 'Precision', def: '¿De los que predijo positivos, cuántos lo eran?' },
-                { name: 'Recall',    def: '¿De los positivos reales, cuántos detectó?' },
-                { name: 'F1-Score',  def: 'Balance entre Precision y Recall.' },
-                { name: 'ROC-AUC',  def: 'Capacidad general de discriminar entre clases.' },
-              ].map(m => (
-                <div key={m.name} className="flex gap-2 py-1.5 border-b border-white/5">
-                  <span className="text-xs font-bold text-slate-300 w-20 shrink-0">{m.name}</span>
-                  <span className="text-xs text-slate-500">{m.def}</span>
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-2">Regresión</p>
-              {[
-                { name: 'R²',   def: '¿Qué % de la variación explica el modelo? (0 a 1)' },
-                { name: 'MAE',  def: 'Error promedio en las mismas unidades del dato.' },
-                { name: 'RMSE', def: 'Error cuadrático. Penaliza errores grandes.' },
-                { name: 'MSE',  def: 'Error cuadrático medio (sin raíz).' },
-                { name: 'MAPE', def: 'Error en porcentaje. Fácil de interpretar.' },
-              ].map(m => (
-                <div key={m.name} className="flex gap-2 py-1.5 border-b border-white/5">
-                  <span className="text-xs font-bold text-slate-300 w-20 shrink-0">{m.name}</span>
-                  <span className="text-xs text-slate-500">{m.def}</span>
-                </div>
-              ))}
-            </div>
+          {/* Navegación anterior / siguiente */}
+          <div className="flex items-center justify-between mt-5">
+            <button onClick={() => setActive(i => Math.max(0, i - 1))} disabled={active === 0}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              ← Anterior
+            </button>
+            <span className="text-xs text-slate-600">{active + 1} / {steps.length}</span>
+            <button onClick={() => setActive(i => Math.min(steps.length - 1, i + 1))} disabled={active === steps.length - 1}
+              className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition disabled:opacity-30 disabled:cursor-not-allowed ${cur.color.pill} hover:opacity-90`}>
+              Siguiente →
+            </button>
           </div>
         </div>
 
