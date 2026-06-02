@@ -1122,7 +1122,7 @@ const DEMOS = [
   },
   {
     id: 'credito', icon: '💳', title: 'Aprobación de Crédito',
-    desc: 'Clasifica si un crédito bancario colombiano será aprobado según el perfil.',
+    desc: 'Clasifica si un crédito bancario será aprobado según el perfil.',
     task: 'Clasificación', rows: 300,
     gradient: 'from-violet-600/20 to-purple-600/20',
     border: 'hover:border-violet-500/50',
@@ -1131,7 +1131,7 @@ const DEMOS = [
   },
   {
     id: 'churn', icon: '📉', title: 'Deserción de Clientes',
-    desc: 'Predice qué clientes de un neobank colombiano dejarán de usar el servicio.',
+    desc: 'Predice qué clientes de un neobank dejarán de usar el servicio.',
     task: 'Clasificación', rows: 300,
     gradient: 'from-rose-600/20 to-pink-600/20',
     border: 'hover:border-rose-500/50',

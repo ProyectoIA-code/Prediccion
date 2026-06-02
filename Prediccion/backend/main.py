@@ -155,8 +155,8 @@ DEMO_GENERATORS = {'vivienda': gen_vivienda, 'credito': gen_credito, 'churn': ge
 
 DEMO_META = {
     'vivienda': {'nombre': 'Compra de Vivienda', 'descripcion': 'Predice el precio en millones COP — 1000 inmuebles 2026 con precios reales por ciudad, zona, estrato y tipo', 'tarea_sugerida': 'regresion', 'target_sugerido': 'precio_millones_cop', 'icono': '🏠'},
-    'credito':  {'nombre': 'Aprobación de Crédito', 'descripcion': 'Clasifica si un crédito bancario colombiano será aprobado o rechazado', 'tarea_sugerida': 'clasificacion', 'target_sugerido': 'aprobado', 'icono': '💳'},
-    'churn':    {'nombre': 'Deserción de Clientes (Churn)', 'descripcion': 'Predice qué clientes de un neobank colombiano dejarán de usar el servicio', 'tarea_sugerida': 'clasificacion', 'target_sugerido': 'churn', 'icono': '📉'},
+    'credito':  {'nombre': 'Aprobación de Crédito', 'descripcion': 'Clasifica si un crédito bancario será aprobado o rechazado', 'tarea_sugerida': 'clasificacion', 'target_sugerido': 'aprobado', 'icono': '💳'},
+    'churn':    {'nombre': 'Deserción de Clientes (Churn)', 'descripcion': 'Predice qué clientes de un neobank dejarán de usar el servicio', 'tarea_sugerida': 'clasificacion', 'target_sugerido': 'churn', 'icono': '📉'},
 }
 
 
