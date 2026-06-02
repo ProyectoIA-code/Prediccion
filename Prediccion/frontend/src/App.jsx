@@ -1,17 +1,139 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import axios from 'axios'
 
 const API = 'https://ml-studio-backend-it5p.onrender.com'
 
 // ── Arquitectura ──────────────────────────────────────────────────────────────
+const ARQ_DETAILS = {
+  vercel: {
+    icon: '🖥️',
+    title: 'Frontend — Vercel',
+    color: 'violet',
+    border: 'border-violet-500/50',
+    bg: 'from-violet-900/60 to-indigo-900/60',
+    accent: 'text-violet-300',
+    badge: 'bg-violet-500/20 border-violet-500/30 text-violet-300',
+    desc: 'Es la interfaz visual. Todo lo que ves: botones, tablas, gráficas y formularios. El usuario interactúa únicamente con esta capa desde su navegador.',
+    stack: [
+      { name: 'React 18', desc: 'Librería que construye la pantalla y gestiona el estado de la app.' },
+      { name: 'Tailwind CSS', desc: 'Los estilos oscuros con gradientes violeta y efectos de vidrio.' },
+      { name: 'Axios', desc: 'Hace las llamadas HTTP al servidor backend y recibe las respuestas.' },
+      { name: 'Vite', desc: 'Empaquetador ultrarrápido que compila el proyecto para producción.' },
+    ],
+    url: 'prediccion-roan.vercel.app',
+    urlLabel: '🌐 URL pública',
+    extra: 'Cada git push actualiza Vercel automáticamente en ~30 segundos.',
+  },
+  render: {
+    icon: '⚙️',
+    title: 'Backend — Render',
+    color: 'emerald',
+    border: 'border-emerald-500/50',
+    bg: 'from-emerald-900/60 to-teal-900/60',
+    accent: 'text-emerald-300',
+    badge: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300',
+    desc: 'Es el cerebro del sistema. Recibe los datos del frontend, ejecuta los algoritmos de Machine Learning, calcula las métricas y devuelve el modelo entrenado serializado.',
+    stack: [
+      { name: 'Python 3', desc: 'Lenguaje de programación principal del servidor.' },
+      { name: 'FastAPI', desc: 'Framework que expone 8 endpoints REST para cada operación ML.' },
+      { name: 'pickle + base64', desc: 'Serializa el modelo entrenado a texto para enviarlo al frontend (arquitectura stateless).' },
+      { name: 'Render (Free)', desc: 'Servidor en la nube gratuito. Se duerme tras 15 min sin uso.' },
+    ],
+    url: 'ml-studio-backend-it5p.onrender.com',
+    urlLabel: '🌐 URL del API',
+    extra: 'Arquitectura stateless: el servidor no guarda nada entre requests. El modelo viaja en cada solicitud.',
+  },
+  ml: {
+    icon: '🤖',
+    title: 'Motor de Machine Learning',
+    color: 'amber',
+    border: 'border-amber-500/50',
+    bg: 'from-amber-900/60 to-orange-900/60',
+    accent: 'text-amber-300',
+    badge: 'bg-amber-500/20 border-amber-500/30 text-amber-300',
+    desc: 'El conjunto de librerías científicas que hacen posible el aprendizaje automático. Viven dentro del backend y se ejecutan en cada entrenamiento.',
+    stack: [
+      { name: 'scikit-learn', desc: '11 algoritmos supervisados: 5 de clasificación y 6 de regresión.' },
+      { name: 'pandas', desc: 'Carga, limpia y transforma los datasets en tablas (DataFrames).' },
+      { name: 'matplotlib / seaborn', desc: 'Genera las gráficas (matriz de confusión, scatter, importancia) como PNG.' },
+      { name: 'numpy', desc: 'Cálculos matemáticos y operaciones vectoriales de alto rendimiento.' },
+    ],
+    url: null,
+    urlLabel: null,
+    extra: 'Incluye StandardScaler para normalizar datos en SVM, KNN, Regresión Logística y SVR.',
+  },
+}
+
+function ArqDetailModal({ item, onClose }) {
+  const d = ARQ_DETAILS[item]
+  if (!d) return null
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+      onClick={onClose}>
+      <div className={`relative w-full max-w-md rounded-2xl border ${d.border} bg-gradient-to-br ${d.bg} p-6 shadow-2xl`}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{d.icon}</span>
+            <div>
+              <h3 className={`font-black text-lg ${d.accent}`}>{d.title}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">ESC o clic fuera para cerrar</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400 hover:text-white transition">✕</button>
+        </div>
+
+        {/* Descripción */}
+        <p className="text-sm text-slate-300 leading-relaxed mb-5">{d.desc}</p>
+
+        {/* Stack */}
+        <p className={`text-[10px] font-bold uppercase tracking-widest ${d.accent} mb-3`}>Está hecho con</p>
+        <ul className="space-y-2.5 mb-5">
+          {d.stack.map(s => (
+            <li key={s.name} className="flex items-start gap-3">
+              <span className={`mt-0.5 shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold ${d.badge}`}>{s.name}</span>
+              <span className="text-xs text-slate-400 leading-relaxed">{s.desc}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* URL */}
+        {d.url && (
+          <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 mb-4">
+            <p className="text-[10px] text-slate-500 mb-1">{d.urlLabel}</p>
+            <p className={`font-mono text-xs font-bold ${d.accent}`}>{d.url}</p>
+          </div>
+        )}
+
+        {/* Extra */}
+        <div className={`rounded-xl border ${d.border} bg-white/5 px-4 py-2.5`}>
+          <p className="text-xs text-slate-400 leading-relaxed">💡 {d.extra}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ViewArquitectura({ onClose }) {
+  const [detail, setDetail] = useState(null)
+
+  // Cerrar con ESC
+  const handleKey = useCallback(e => {
+    if (e.key === 'Escape') detail ? setDetail(null) : onClose()
+  }, [detail, onClose])
+  useEffect(() => {
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [handleKey])
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#080B14]/95 backdrop-blur-xl">
       <div className="mx-auto max-w-4xl px-4 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl font-black text-white">Arquitectura del <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">Proyecto</span></h2>
-            <p className="text-sm text-slate-500 mt-1">Cómo están conectadas las partes de la aplicación</p>
+            <p className="text-sm text-slate-500 mt-1">Haz clic en cada bloque para ver más detalles · ESC para cerrar</p>
           </div>
           <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-400 hover:text-white transition">✕ Cerrar</button>
         </div>
@@ -36,14 +158,18 @@ function ViewArquitectura({ onClose }) {
               <div className="w-0.5 h-6 bg-gradient-to-b from-violet-500 to-indigo-500" />
             </div>
 
-            {/* Frontend */}
-            <div className="flex items-center justify-center gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-6 py-4 w-full max-w-sm">
-              <span className="text-2xl">🖥</span>
-              <div>
-                <p className="font-bold text-violet-300">Frontend — Vercel</p>
-                <p className="text-xs text-slate-400">Interfaz visual hecha en React · prediccion-roan.vercel.app</p>
+            {/* Frontend — clickable */}
+            <button onClick={() => setDetail('vercel')}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-6 py-4 w-full max-w-sm hover:border-violet-400/60 hover:bg-violet-500/20 transition group text-left">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🖥</span>
+                <div>
+                  <p className="font-bold text-violet-300">Frontend — Vercel</p>
+                  <p className="text-xs text-slate-400">Interfaz visual hecha en React · prediccion-roan.vercel.app</p>
+                </div>
               </div>
-            </div>
+              <span className="text-[10px] text-violet-500 group-hover:text-violet-300 border border-violet-500/30 rounded-lg px-2 py-1 transition shrink-0">ver más</span>
+            </button>
 
             <div className="flex flex-col items-center gap-1">
               <div className="w-0.5 h-6 bg-gradient-to-b from-indigo-500 to-violet-500" />
@@ -51,14 +177,18 @@ function ViewArquitectura({ onClose }) {
               <div className="w-0.5 h-6 bg-gradient-to-b from-violet-500 to-emerald-500" />
             </div>
 
-            {/* Backend */}
-            <div className="flex items-center justify-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-4 w-full max-w-sm">
-              <span className="text-2xl">⚙️</span>
-              <div>
-                <p className="font-bold text-emerald-300">Backend — Render</p>
-                <p className="text-xs text-slate-400">Servidor Python con FastAPI · ml-studio-backend-it5p.onrender.com</p>
+            {/* Backend — clickable */}
+            <button onClick={() => setDetail('render')}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-4 w-full max-w-sm hover:border-emerald-400/60 hover:bg-emerald-500/20 transition group text-left">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚙️</span>
+                <div>
+                  <p className="font-bold text-emerald-300">Backend — Render</p>
+                  <p className="text-xs text-slate-400">Servidor Python con FastAPI · ml-studio-backend-it5p.onrender.com</p>
+                </div>
               </div>
-            </div>
+              <span className="text-[10px] text-emerald-500 group-hover:text-emerald-300 border border-emerald-500/30 rounded-lg px-2 py-1 transition shrink-0">ver más</span>
+            </button>
 
             <div className="flex flex-col items-center gap-1">
               <div className="w-0.5 h-6 bg-gradient-to-b from-emerald-500 to-amber-500" />
@@ -66,14 +196,18 @@ function ViewArquitectura({ onClose }) {
               <div className="w-0.5 h-6 bg-gradient-to-b from-amber-500 to-orange-500" />
             </div>
 
-            {/* ML */}
-            <div className="flex items-center justify-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-4 w-full max-w-sm">
-              <span className="text-2xl">🤖</span>
-              <div>
-                <p className="font-bold text-amber-300">Motor de Machine Learning</p>
-                <p className="text-xs text-slate-400">scikit-learn · pandas · matplotlib · numpy</p>
+            {/* Motor ML — clickable */}
+            <button onClick={() => setDetail('ml')}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-4 w-full max-w-sm hover:border-amber-400/60 hover:bg-amber-500/20 transition group text-left">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🤖</span>
+                <div>
+                  <p className="font-bold text-amber-300">Motor de Machine Learning</p>
+                  <p className="text-xs text-slate-400">scikit-learn · pandas · matplotlib · numpy</p>
+                </div>
               </div>
-            </div>
+              <span className="text-[10px] text-amber-500 group-hover:text-amber-300 border border-amber-500/30 rounded-lg px-2 py-1 transition shrink-0">ver más</span>
+            </button>
 
           </div>
         </div>
@@ -134,6 +268,9 @@ function ViewArquitectura({ onClose }) {
         </div>
 
       </div>
+
+      {/* Modal de detalle */}
+      {detail && <ArqDetailModal item={detail} onClose={() => setDetail(null)} />}
     </div>
   )
 }
