@@ -1336,8 +1336,8 @@ export default function App() {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button onClick={() => setShowArq(true)}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition">
-              🏗 Arquitectura
+              className="rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:from-cyan-500/35 hover:to-blue-500/35 hover:text-cyan-100 hover:border-cyan-400/60 shadow-sm shadow-cyan-500/20 transition">
+              🧩 Arquitectura
             </button>
             <button onClick={() => setShowManual(true)}
               className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 hover:bg-violet-500/20 transition">
