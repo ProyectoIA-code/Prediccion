@@ -1370,6 +1370,15 @@ export default function App() {
     setSelFeatures((dataInfo?.columnas || []).filter(c => c !== col))
   }
 
+  // Detecta si la variable objetivo es numérica continua (muchos valores únicos)
+  const targetUniqueCount = target && dataInfo?.records
+    ? new Set(dataInfo.records.map(r => r[target])).size
+    : 0
+  const targetIsNumeric = target && dataInfo?.tipos
+    ? (dataInfo.tipos[target] || '').includes('float') || (dataInfo.tipos[target] || '').includes('int')
+    : false
+  const showClasifWarning = target && taskType === 'clasificacion' && targetIsNumeric && targetUniqueCount > 20
+
   const METRIC_GRADIENTS = [
     'from-violet-500 to-indigo-500',
     'from-indigo-500 to-blue-500',
@@ -1627,8 +1636,26 @@ export default function App() {
                     <option value="" className="bg-slate-900">— Selecciona una columna —</option>
                     {dataInfo.columnas?.map(c => <option key={c} value={c} className="bg-slate-900">{c}</option>)}
                   </select>
-                  {target && <p className="mt-1.5 text-xs text-slate-600">Tipo: <span className="text-violet-400 font-semibold">{dataInfo.tipos?.[target]}</span></p>}
+                  {target && <p className="mt-1.5 text-xs text-slate-600">Tipo: <span className="text-violet-400 font-semibold">{dataInfo.tipos?.[target]}</span> · <span className="text-slate-500">{targetUniqueCount} valores únicos</span></p>}
                 </Card>
+
+                {/* Aviso combinación incorrecta */}
+                {showClasifWarning && (
+                  <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+                    <span className="text-xl shrink-0">⚠️</span>
+                    <div>
+                      <p className="text-sm font-bold text-amber-300">Combinación no recomendada</p>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        <span className="font-semibold text-amber-200">"{target}"</span> tiene <span className="font-semibold text-amber-200">{targetUniqueCount} valores únicos</span> — es una variable numérica continua.
+                        La clasificación necesita pocas categorías (ej: 0/1, Sí/No).
+                      </p>
+                      <button onClick={() => { setTaskType('regresion'); setAlgorithm('') }}
+                        className="mt-2 rounded-lg bg-amber-500/20 border border-amber-500/40 px-3 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/30 transition">
+                        ✅ Cambiar a Regresión
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <Card className="p-5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3">⚙ Tipo de tarea</p>

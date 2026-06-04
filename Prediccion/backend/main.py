@@ -397,6 +397,14 @@ def train(req: TrainRequest):
     y = df[req.target].values
     if req.task_type == 'clasificacion':
         y = y.astype(int)
+        n_classes = len(np.unique(y))
+        if n_classes > 20:
+            raise HTTPException(
+                400,
+                f"La variable '{req.target}' tiene {n_classes} valores únicos — demasiados para clasificación. "
+                f"La clasificación funciona con variables de pocas categorías (ej: 0/1, Sí/No, Aprobado/Rechazado). "
+                f"Para predecir '{req.target}' usa ➜ Regresión."
+            )
 
     scaler = None
     if req.algorithm in NEEDS_SCALING:
