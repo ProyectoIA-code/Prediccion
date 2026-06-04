@@ -1552,6 +1552,7 @@ export default function App() {
                     ⬇ Descargar Excel
                   </a>
                 )}
+                <Btn variant="secondary" size="sm" onClick={() => setStep(1)}>← Atrás</Btn>
                 <Btn onClick={() => setStep(3)}>Continuar →</Btn>
               </div>
             </div>
@@ -1691,11 +1692,14 @@ export default function App() {
         {/* ═══ STEP 3 ═══ */}
         {!loading && step === 3 && dataInfo && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-black">
-                Configurar <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">modelo</span>
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">Define la variable a predecir, el tipo de tarea y el algoritmo</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black">
+                  Configurar <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">modelo</span>
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Define la variable a predecir, el tipo de tarea y el algoritmo</p>
+              </div>
+              <Btn variant="secondary" size="sm" onClick={() => setStep(2)}>← Atrás</Btn>
             </div>
 
             <div className="grid gap-5 lg:grid-cols-5">
@@ -1826,7 +1830,7 @@ export default function App() {
                   </span>
                 </p>
               </div>
-              <Btn variant="secondary" size="sm" onClick={() => { setStep(3); setTrainResults(null) }}>← Cambiar</Btn>
+              <Btn variant="secondary" size="sm" onClick={() => { setStep(3); setTrainResults(null) }}>← Atrás</Btn>
             </div>
 
             <div className="flex gap-1 rounded-xl border border-white/10 bg-white/5 p-1 w-fit backdrop-blur-sm">
