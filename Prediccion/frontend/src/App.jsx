@@ -1278,6 +1278,8 @@ export default function App() {
   const [loadedDemo, setLoadedDemo] = useState(null)
   const [dataInfo, setDataInfo]     = useState(null)
   const [cleanOpts, setCleanOpts]   = useState({ eliminar_duplicados: false, estrategia_nulos: 'ninguna' })
+  const [corrChart, setCorrChart]   = useState(null)
+  const [corrLoading, setCorrLoading] = useState(false)
   const [target, setTarget]         = useState('')
   const [taskType, setTaskType]     = useState('clasificacion')
   const [algorithm, setAlgorithm]   = useState('')
@@ -1329,6 +1331,18 @@ export default function App() {
       setDataInfo(prev => ({ ...prev, ...data, problemas: [] }))
       setSuccessMsg(`Limpieza: ${data.acciones?.join(' · ') || 'Sin cambios'}`)
     } catch (e) { handleError(e) } finally { setLoading(false) }
+  }
+
+  const loadCorr = async () => {
+    setCorrLoading(true); setCorrChart(null)
+    try {
+      const src = dataInfo
+      const { data } = await axios.post(`${API}/correlacion`, {
+        records: src.records,
+        columnas: src.columnas,
+      })
+      setCorrChart(data.chart)
+    } catch (e) { handleError(e) } finally { setCorrLoading(false) }
   }
 
   const trainModel = async () => {
@@ -1615,6 +1629,56 @@ export default function App() {
                   </tbody>
                 </table>
               </div>
+            </Card>
+
+            {/* Matriz de correlación */}
+            <Card className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-300 flex items-center gap-2">
+                  <span>🔗</span> Matriz de Correlación
+                  <span className="text-[10px] font-normal text-slate-600 border border-white/10 rounded-full px-2 py-0.5">Columnas numéricas</span>
+                </h3>
+                {!corrChart && (
+                  <Btn onClick={loadCorr} disabled={corrLoading} variant="secondary" size="sm">
+                    {corrLoading ? 'Generando…' : '📊 Generar'}
+                  </Btn>
+                )}
+                {corrChart && (
+                  <Btn onClick={() => { setCorrChart(null) }} variant="secondary" size="sm">✕ Ocultar</Btn>
+                )}
+              </div>
+              {!corrChart && !corrLoading && (
+                <div className="rounded-xl border border-white/5 bg-white/3 px-4 py-6 text-center">
+                  <p className="text-2xl mb-2">🔗</p>
+                  <p className="text-sm text-slate-400">Muestra qué tan relacionadas están las variables entre sí.</p>
+                  <p className="text-xs text-slate-600 mt-1">Útil para elegir qué columnas usar como predictoras.</p>
+                </div>
+              )}
+              {corrLoading && (
+                <div className="flex items-center justify-center py-10 gap-3">
+                  <div className="h-5 w-5 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin" />
+                  <span className="text-sm text-slate-500">Calculando correlaciones…</span>
+                </div>
+              )}
+              {corrChart && (
+                <div>
+                  <img src={`data:image/png;base64,${corrChart}`} alt="Matriz de correlación" className="w-full rounded-xl" />
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+                      <p className="text-xs font-bold text-emerald-400">Cercano a +1</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Suben juntas ↑↑</p>
+                    </div>
+                    <div className="rounded-lg bg-white/5 border border-white/10 px-3 py-2">
+                      <p className="text-xs font-bold text-slate-400">Cercano a 0</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Sin relación</p>
+                    </div>
+                    <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
+                      <p className="text-xs font-bold text-red-400">Cercano a -1</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Una sube, otra baja ↑↓</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className="p-5">
