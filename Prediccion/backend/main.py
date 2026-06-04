@@ -286,52 +286,6 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(400, f'Error al procesar el archivo: {e}')
 
 
-# ── Correlación ──────────────────────────────────────────────────────────────
-
-class CorrRequest(BaseModel):
-    records: List[Dict[str, Any]]
-    columnas: List[str]
-
-
-@app.post('/correlacion')
-def correlacion(req: CorrRequest):
-    try:
-        df = pd.DataFrame(req.records, columns=req.columnas)
-        num_df = df.select_dtypes(include=[np.number])
-        if num_df.shape[1] < 2:
-            raise HTTPException(400, 'Se necesitan al menos 2 columnas numéricas para calcular la correlación')
-
-        # Limitar a 15 columnas para que la gráfica sea legible
-        if num_df.shape[1] > 15:
-            num_df = num_df.iloc[:, :15]
-
-        corr = num_df.corr()
-        n = len(corr.columns)
-        fig_size = max(6, n * 0.9)
-        fig, ax = plt.subplots(figsize=(fig_size, fig_size * 0.85))
-
-        mask = np.zeros_like(corr, dtype=bool)
-        mask[np.triu_indices_from(mask, k=1)] = True  # oculta triángulo superior
-
-        sns.heatmap(
-            corr, mask=mask, annot=True, fmt='.2f', cmap='RdYlGn',
-            center=0, vmin=-1, vmax=1, ax=ax,
-            annot_kws={'size': max(7, 11 - n)},
-            linewidths=0.5, linecolor='#1e293b',
-            cbar_kws={'shrink': 0.8, 'label': 'Correlación'},
-        )
-        ax.set_title('Matriz de Correlación', fontsize=14, fontweight='bold', pad=16)
-        ax.tick_params(axis='x', rotation=35, labelsize=max(7, 11 - n))
-        ax.tick_params(axis='y', rotation=0,  labelsize=max(7, 11 - n))
-        plt.tight_layout()
-
-        return {'chart': fig_to_b64(fig), 'columnas': list(corr.columns)}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(400, f'Error generando correlación: {e}')
-
-
 # ── Clean (stateless: recibe records, devuelve records limpios) ───────────────
 
 class CleanRequest(BaseModel):
