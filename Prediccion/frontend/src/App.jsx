@@ -1368,6 +1368,13 @@ export default function App() {
   const handleTargetChange = (col) => {
     setTarget(col); setAlgorithm('')
     setSelFeatures((dataInfo?.columnas || []).filter(c => c !== col))
+    // Auto-detectar tipo de tarea según tipo de dato y valores únicos
+    if (col && dataInfo) {
+      const tipo      = dataInfo.tipos?.[col] || ''
+      const uniqueVals = new Set((dataInfo.records || []).map(r => r[col])).size
+      const isContinua = tipo.includes('float') || uniqueVals > 20
+      setTaskType(isContinua ? 'regresion' : 'clasificacion')
+    }
   }
 
   // Detecta si la variable objetivo es numérica continua (muchos valores únicos)
